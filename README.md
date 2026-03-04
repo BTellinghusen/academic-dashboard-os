@@ -14,9 +14,9 @@ Built entirely in vanilla HTML, CSS, and JavaScript — no frameworks, no depend
 - **Whiteboard session** log for concept mapping and brainstorming
 - **Weekly academic to-do list**
 - Google Calendar integration (coming soon)
-- Fully persistent via localStorage — survives page reloads
+- Fully persistent via localStorage... survives page reloads
 - Designed to run as a native desktop app via WebCatalog
 
 ## Built for
 Staying organized through preclinical and clinical medical training without 
-relying on bloated tools that don't fit the workflow.
+relying on tools that don't fit my personal workflow.
