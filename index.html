@@ -1,0 +1,3235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Academic OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0d0f;
+    --surface: #131316;
+    --surface2: #18181c;
+    --surface3: #1e1e24;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8e8f0;
+    --text-muted: #6b6b7e;
+    --text-dim: #3a3a4a;
+    --accent: #7c6af7;
+    --accent-soft: rgba(124,106,247,0.12);
+    --accent-glow: rgba(124,106,247,0.25);
+    --green: #34d399;
+    --green-soft: rgba(52,211,153,0.1);
+    --amber: #fbbf24;
+    --amber-soft: rgba(251,191,36,0.1);
+    --red: #f87171;
+    --red-soft: rgba(248,113,113,0.1);
+    --blue: #60a5fa;
+    --blue-soft: rgba(96,165,250,0.1);
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Subtle background texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: 
+      radial-gradient(ellipse 80% 50% at 20% 0%, rgba(124,106,247,0.04) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 100%, rgba(96,165,250,0.03) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ─── LAYOUT ─────────────────────────────────── */
+  .shell {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    min-height: 100vh;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ─── SIDEBAR ─────────────────────────────────── */
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 28px 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar::-webkit-scrollbar { width: 0; }
+
+  .brand {
+    padding: 0 20px 24px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+
+  .brand-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    color: var(--text);
+    letter-spacing: -0.3px;
+  }
+
+  .brand-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+    font-family: 'Geist Mono', monospace;
+    letter-spacing: 0.5px;
+  }
+
+  .nav-section {
+    padding: 0 12px;
+    margin-bottom: 8px;
+  }
+
+  .nav-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--text-dim);
+    padding: 4px 8px;
+    margin-bottom: 4px;
+    font-family: 'Geist Mono', monospace;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 10px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 13.5px;
+    transition: all 0.15s ease;
+    text-decoration: none;
+    font-weight: 400;
+  }
+
+  .nav-item:hover { background: var(--surface3); color: var(--text); }
+  .nav-item.active { background: var(--accent-soft); color: var(--accent); }
+
+  .nav-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    opacity: 0.7;
+  }
+
+  .nav-item.active .nav-icon { opacity: 1; }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 16px 20px 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .gcal-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: var(--surface3);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .gcal-badge:hover { border-color: var(--accent); background: var(--accent-soft); }
+
+  .gcal-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .gcal-text { font-size: 12px; color: var(--text-muted); }
+  .gcal-text strong { color: var(--text); font-weight: 500; display: block; font-size: 12px; }
+
+  /* ─── MAIN ─────────────────────────────────────── */
+  .main {
+    padding: 36px 40px;
+    overflow-y: auto;
+  }
+
+  .page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 36px;
+  }
+
+  .page-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 32px;
+    color: var(--text);
+    line-height: 1.1;
+    letter-spacing: -0.5px;
+  }
+
+  .page-date {
+    font-family: 'Geist Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 6px;
+  }
+
+  /* ─── CALENDAR STRIP ─────────────────────────── */
+  .cal-strip {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 36px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .cal-strip::-webkit-scrollbar { height: 0; }
+
+  .cal-day {
+    flex-shrink: 0;
+    width: 52px;
+    padding: 10px 0;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .cal-day:hover { border-color: var(--border2); background: var(--surface3); }
+
+  .cal-day.today {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  .cal-day.has-event::after {
+    content: '';
+    display: block;
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--accent);
+    margin: 3px auto 0;
+  }
+
+  .cal-weekday { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Geist Mono', monospace; }
+  .cal-num { font-size: 16px; font-weight: 500; color: var(--text); margin-top: 2px; }
+  .cal-day.today .cal-weekday { color: var(--accent); }
+  .cal-day.today .cal-num { color: var(--accent); }
+
+  .cal-events-preview {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 36px;
+  }
+
+  .cal-events-title {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: 'Geist Mono', monospace;
+    margin-bottom: 12px;
+  }
+
+  .event-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .event-row:last-child { border-bottom: none; }
+
+  .event-time {
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    width: 72px;
+    flex-shrink: 0;
+  }
+
+  .event-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .event-name { font-size: 13px; color: var(--text); flex: 1; }
+  .event-tag {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 20px;
+    font-family: 'Geist Mono', monospace;
+  }
+
+  /* ─── GRID ──────────────────────────────────────── */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+
+  .grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+
+  /* ─── CARD ────────────────────────────────────── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .card:hover { border-color: var(--border2); }
+
+  .card-header {
+    padding: 16px 20px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .card-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    font-family: 'Geist Mono', monospace;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-title-icon { font-size: 14px; }
+
+  .card-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-family: 'Geist Mono', monospace;
+    background: var(--surface3);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+
+  .card-body { padding: 16px 20px; }
+
+  .add-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 8px 0 0;
+    border: none;
+    background: none;
+    font-family: 'DM Sans', sans-serif;
+    transition: color 0.15s;
+  }
+
+  .add-btn:hover { color: var(--accent); }
+
+  /* ─── CHECKBOX ───────────────────────────────── */
+  .check-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+
+  .check-item:last-of-type { border-bottom: none; }
+
+  .checkbox {
+    width: 16px; height: 16px;
+    border: 1.5px solid var(--border2);
+    border-radius: 4px;
+    flex-shrink: 0;
+    margin-top: 1px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+  }
+
+  .checkbox:hover { border-color: var(--accent); }
+  .checkbox.checked { background: var(--accent); border-color: var(--accent); }
+  .checkbox.checked::after { content: '✓'; font-size: 10px; color: white; line-height: 1; }
+
+  .check-label {
+    font-size: 13.5px;
+    color: var(--text);
+    flex: 1;
+    line-height: 1.4;
+  }
+
+  .check-item.done .check-label {
+    text-decoration: line-through;
+    color: var(--text-muted);
+  }
+
+  .check-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* ─── DUE DATE ──────────────────────────────── */
+  .due {
+    font-size: 10px;
+    font-family: 'Geist Mono', monospace;
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.3px;
+  }
+
+  .due.overdue { background: var(--red-soft); color: var(--red); }
+  .due.soon { background: var(--amber-soft); color: var(--amber); }
+  .due.ok { background: var(--green-soft); color: var(--green); }
+
+  /* ─── PROJECT TRACKER ────────────────────────── */
+  .project-block {
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+  }
+
+  .project-block:last-of-type { margin-bottom: 0; }
+
+  .project-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: var(--surface2);
+    cursor: pointer;
+    gap: 10px;
+  }
+
+  .project-header:hover { background: var(--surface3); }
+
+  .project-name {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--text);
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .project-progress {
+    font-size: 10px;
+    font-family: 'Geist Mono', monospace;
+    color: var(--text-muted);
+  }
+
+  .progress-bar-wrap {
+    height: 3px;
+    background: var(--surface3);
+    border-radius: 2px;
+    overflow: hidden;
+    width: 60px;
+  }
+
+  .progress-bar {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  .project-tasks { padding: 4px 14px 10px; background: var(--surface); }
+
+  .task-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .task-row:last-child { border-bottom: none; }
+
+  .task-indent { width: 16px; height: 1px; background: var(--border); flex-shrink: 0; }
+  .task-name { flex: 1; font-size: 13px; color: var(--text); }
+  .task-row.done .task-name { text-decoration: line-through; color: var(--text-muted); }
+
+  /* ─── DUAL CHECK (watched + AMBOSS) ─────────── */
+  .dual-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .dual-row:last-of-type { border-bottom: none; }
+
+  .dual-label { flex: 1; font-size: 13.5px; color: var(--text); }
+  .dual-row.fully-done .dual-label { text-decoration: line-through; color: var(--text-muted); }
+
+  .check-col {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .check-col-label {
+    font-size: 9px;
+    color: var(--text-dim);
+    font-family: 'Geist Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    width: 44px;
+    text-align: right;
+  }
+
+  .dual-headers {
+    display: flex;
+    justify-content: flex-end;
+    gap: 4px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 4px;
+  }
+
+  .dual-h-label {
+    font-size: 9px;
+    color: var(--text-dim);
+    font-family: 'Geist Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    width: 64px;
+    text-align: center;
+  }
+
+  /* ─── REVIEW SECTION ─────────────────────────── */
+  .review-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .review-item:last-of-type { border-bottom: none; }
+
+  .review-pill {
+    font-size: 9px;
+    padding: 2px 7px;
+    border-radius: 20px;
+    font-family: 'Geist Mono', monospace;
+    flex-shrink: 0;
+  }
+
+  .review-name { flex: 1; font-size: 13.5px; color: var(--text); }
+
+  /* ─── WHITEBOARD ─────────────────────────────── */
+  .wb-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .wb-item:last-of-type { border-bottom: none; }
+
+  .wb-num {
+    font-size: 11px;
+    font-family: 'Geist Mono', monospace;
+    color: var(--text-dim);
+    padding-top: 2px;
+    width: 18px;
+    flex-shrink: 0;
+  }
+
+  .wb-text { flex: 1; font-size: 13.5px; color: var(--text); }
+  .wb-tag {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: 'Geist Mono', monospace;
+    flex-shrink: 0;
+  }
+
+  /* ─── DAILY PLANNING ─────────────────────────── */
+  .time-block {
+    display: flex;
+    gap: 14px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    align-items: flex-start;
+  }
+
+  .time-block:last-of-type { border-bottom: none; }
+
+  .time-slot {
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    width: 48px;
+    flex-shrink: 0;
+    padding-top: 2px;
+  }
+
+  .time-content { flex: 1; }
+
+  .time-task {
+    font-size: 13.5px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .time-badge {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: 'Geist Mono', monospace;
+    background: var(--accent-soft);
+    color: var(--accent);
+    border: 1px solid rgba(124,106,247,0.2);
+  }
+
+  /* ─── SECTION DIVIDER ─────────────────────────── */
+  .section-gap { height: 32px; }
+
+  .section-heading {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    color: var(--text);
+    margin-bottom: 16px;
+    letter-spacing: -0.3px;
+  }
+
+  /* ─── MINI STAT ──────────────────────────────── */
+  .stat-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .stat-chip {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .stat-val {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: 'Geist Mono', monospace;
+  }
+
+  /* ─── TEXTAREA STYLE ─────────────────────────── */
+  .note-area {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13.5px;
+    resize: none;
+    outline: none;
+    line-height: 1.6;
+    min-height: 80px;
+    placeholder-color: var(--text-dim);
+  }
+
+  .note-area::placeholder { color: var(--text-dim); }
+
+  /* ─── TOMORROW BOX ──────────────────────────── */
+  .tmrw-highlight {
+    border-left: 2px solid var(--blue);
+    padding-left: 12px;
+    margin-bottom: 8px;
+  }
+
+  /* ─── TOGGLE ─────────────────────────────────── */
+  .collapse-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 12px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    transition: transform 0.2s;
+  }
+
+  .collapse-btn.open { transform: rotate(90deg); }
+
+  /* ─── SCROLLBAR ──────────────────────────────── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--border2); }
+
+  /* ─── FOCUS RING ─────────────────────────────── */
+  input:focus, textarea:focus { outline: none; }
+
+  .inline-input {
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13.5px;
+    outline: none;
+    width: 100%;
+    padding: 0;
+  }
+
+  .inline-input::placeholder { color: var(--text-dim); }
+
+  /* ─── COMPLETED DRAWER ─────────────────────── */
+  .completed-drawer {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .completed-drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 20px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .completed-drawer-header:hover { background: var(--surface2); }
+
+  .completed-list {
+    border-top: 1px solid var(--border);
+    padding: 6px 20px 10px;
+  }
+
+  .completed-task-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    opacity: 0.6;
+  }
+
+  .completed-task-row:last-child { border-bottom: none; }
+
+  .completed-task-name {
+    flex: 1;
+    font-size: 13px;
+    color: var(--text-muted);
+    text-decoration: line-through;
+  }
+
+  .completed-check-icon {
+    width: 16px; height: 16px;
+    border-radius: 4px;
+    background: var(--green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: #0d0d0f;
+    flex-shrink: 0;
+  }
+
+  .completed-time {
+    font-size: 10px;
+    font-family: 'Geist Mono', monospace;
+    color: var(--text-dim);
+  }
+
+  /* ─── ROLLOVER TOAST ─────────────────────────── */
+  .toast {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface3);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 12px 20px;
+    font-size: 13px;
+    color: var(--text);
+    z-index: 1000;
+    opacity: 0;
+    transition: all 0.35s ease;
+    pointer-events: none;
+    white-space: nowrap;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .completed-uncheck {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    background: transparent;
+    border: 1px solid var(--border2);
+    color: var(--text-muted);
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.15s;
+    opacity: 0;
+  }
+
+  .completed-task-row:hover .completed-uncheck {
+    opacity: 1;
+  }
+
+  .completed-uncheck:hover {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .review-check-col {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  /* ── Task action buttons (→ move, × remove) ── */
+  .task-actions {
+    display: flex;
+    gap: 3px;
+    opacity: 0;
+    transition: opacity 0.15s;
+    margin-left: 4px;
+  }
+  .check-item:hover .task-actions { opacity: 1; }
+  .task-action-btn {
+    width: 18px; height: 18px;
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; cursor: pointer; color: var(--text-muted);
+    transition: all 0.15s;
+  }
+  .task-action-btn:hover { background: var(--accent-soft); color: var(--accent); }
+  .task-action-btn.remove:hover { background: var(--red-soft); color: var(--red); }
+
+  /* ── Time block remove ── */
+  .block-remove {
+    width: 18px; height: 18px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-dim); font-size: 16px; cursor: pointer;
+    border-radius: 4px; transition: all 0.15s; opacity: 0;
+  }
+  .time-block:hover .block-remove { opacity: 1; }
+  .block-remove:hover { color: var(--red); background: var(--red-soft); }
+
+  /* ── Drag handle ── */
+  .drag-handle {
+    width: 14px; flex-shrink: 0; cursor: grab;
+    color: var(--text-dim); font-size: 12px; opacity: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity 0.15s;
+    user-select: none;
+  }
+  .check-item:hover .drag-handle { opacity: 1; }
+  .check-item.dragging { opacity: 0.4; }
+  .check-item.drag-over { border-top: 2px solid var(--accent); }
+
+  /* ── Keyboard shortcut modal ── */
+  .kbd-modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000; backdrop-filter: blur(4px);
+  }
+  .kbd-modal {
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: 14px; padding: 28px 32px; width: 420px; max-width: 90vw;
+  }
+  .kbd-modal-title { font-size: 15px; font-weight: 600; margin-bottom: 20px; color: var(--text); }
+  .kbd-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--border); }
+  .kbd-row:last-child { border-bottom: none; }
+  .kbd-desc { font-size: 13px; color: var(--text-muted); }
+  .kbd-keys { display: flex; gap: 4px; }
+  kbd {
+    background: var(--surface3); border: 1px solid var(--border2);
+    border-radius: 5px; padding: 2px 7px; font-size: 11px;
+    font-family: 'Geist Mono', monospace; color: var(--text);
+  }
+  .kbd-close-btn {
+    margin-top: 20px; width: 100%;
+    background: var(--surface3); border: 1px solid var(--border2);
+    color: var(--text-muted); border-radius: 8px; padding: 8px;
+    cursor: pointer; font-size: 13px; transition: all 0.15s;
+  }
+  .kbd-close-btn:hover { background: var(--accent-soft); color: var(--accent); }
+
+  /* ── Stats page ── */
+  .stats-page {
+    display: none;
+    padding: 0 0 40px;
+  }
+  .stats-page.active { display: block; }
+  .main-content { display: block; }
+  .main-content.hidden { display: none; }
+  .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px;
+  }
+  .stat-card-val { font-size: 36px; font-weight: 700; color: var(--accent); font-family: 'DM Serif Display', serif; }
+  .stat-card-label { font-size: 11px; color: var(--text-muted); font-family: 'Geist Mono', monospace; text-transform: uppercase; letter-spacing: .8px; margin-top: 4px; }
+  .stat-card-sub { font-size: 12px; color: var(--text-dim); margin-top: 8px; }
+  .stats-bar-chart { margin-top: 8px; }
+  .stats-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .stats-bar-label { font-size: 11px; color: var(--text-muted); font-family: 'Geist Mono', monospace; width: 32px; flex-shrink: 0; }
+  .stats-bar-track { flex: 1; height: 6px; background: var(--surface3); border-radius: 3px; overflow: hidden; }
+  .stats-bar-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.4s ease; }
+  .stats-bar-count { font-size: 11px; color: var(--text-muted); font-family: 'Geist Mono', monospace; width: 20px; text-align: right; }
+
+  /* ── ? help button ── */
+  .help-btn {
+    position: fixed; bottom: 24px; right: 24px;
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--surface2); border: 1px solid var(--border2);
+    color: var(--text-muted); font-size: 15px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; z-index: 100;
+    font-family: 'Geist Mono', monospace;
+  }
+  .help-btn:hover { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+
+  .data-btn {
+    flex: 1;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+    background: var(--surface3); border: 1px solid var(--border2);
+    color: var(--text-muted); border-radius: 6px; padding: 6px 8px;
+    font-size: 11px; font-family: 'DM Sans', sans-serif;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .data-btn:hover { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+
+  .lec-remove {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-dim);
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: color 0.15s, background 0.15s;
+    line-height: 1;
+    margin-right: 4px;
+  }
+  .lec-remove:hover { color: var(--red); background: var(--red-soft); }
+
+  .project-footer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px 14px;
+    border-top: 1px solid var(--border);
+  }
+
+  .complete-project-btn {
+    background: var(--green-soft);
+    color: var(--green);
+    border: 1px solid rgba(52,211,153,0.25);
+    border-radius: var(--radius-sm);
+    padding: 5px 12px;
+    font-size: 11px;
+    font-family: 'Geist Mono', monospace;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: .3px;
+  }
+  .complete-project-btn:hover { background: rgba(52,211,153,0.2); }
+
+  .proj-due-label { display: flex; flex-direction: column; align-items: flex-end; }
+
+  .completed-project-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .completed-project-row:last-child { border-bottom: none; }
+  .completed-project-name { flex: 1; font-size: 13px; color: var(--text-muted); }
+  .completed-project-time { font-size: 10px; color: var(--text-dim); font-family: 'Geist Mono', monospace; flex-shrink: 0; }
+  .uncomplete-project-btn {
+    background: transparent;
+    border: 1px solid var(--border2);
+    color: var(--text-muted);
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'Geist Mono', monospace;
+  }
+  .uncomplete-project-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+
+  .wb-item .checkbox { flex-shrink: 0; }
+
+  /* Fade in */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .card { animation: fadeUp 0.3s ease both; }
+  .card:nth-child(2) { animation-delay: 0.05s; }
+  .card:nth-child(3) { animation-delay: 0.1s; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- ─── SIDEBAR ─────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-title">Academic OS</div>
+      <div class="brand-sub">WORKSPACE · 2026</div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Dashboard</div>
+      <a href="#today" class="nav-item active" onclick="setActive(this)">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 8h6M5 11h4"/></svg>
+        Today
+      </a>
+      <a href="#weekly" class="nav-item" onclick="setActive(this)">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 5h12M2 8h8M2 11h10"/></svg>
+        Weekly To-Do
+      </a>
+      <a href="#tomorrow" class="nav-item" onclick="setActive(this)">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg>
+        Tomorrow
+      </a>
+      <a href="#" class="nav-item" onclick="event.preventDefault();setActive(this);showStats()">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12l3-4 3 2 3-5 3 3"/><path d="M2 14h12"/></svg>
+        Stats
+      </a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Research</div>
+      <a href="#projects" class="nav-item" onclick="setActive(this)">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3h4v4H3zM9 3h4v4H9zM3 9h4v4H3zM9 9h4v4H9z"/></svg>
+        Projects
+      </a>
+      <a href="#whiteboard" class="nav-item" onclick="setActive(this)">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="9" rx="1.5"/><path d="M5 14h6"/><path d="M5 7h6M5 9.5h4"/></svg>
+        Whiteboard
+      </a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Lectures</div>
+      <a href="#lectures" class="nav-item" onclick="setActive(this)">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12v7H2z"/><path d="M5 11v2M11 11v2M3 13h10"/><path d="M6.5 7.5L9 6v3L6.5 7.5z" fill="currentColor" stroke="none"/></svg>
+        Lecture List
+      </a>
+      <a href="#review" class="nav-item" onclick="setActive(this)">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 2H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1z"/><path d="M6 5.5h4M6 8h4M6 10.5h2"/></svg>
+        Review Queue
+      </a>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="gcal-badge" onclick="connectGCal()">
+        <div class="gcal-dot"></div>
+        <div class="gcal-text">
+          <strong>Google Calendar</strong>
+          Click to connect
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:10px;">
+        <button class="data-btn" onclick="exportData()" title="Export all data as JSON backup">
+          <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v8M5 7l3 3 3-3"/><path d="M3 11v2h10v-2"/></svg>
+          Export
+        </button>
+        <button class="data-btn" onclick="importData()" title="Restore from JSON backup">
+          <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 10V2M5 5l3-3 3 3"/><path d="M3 11v2h10v-2"/></svg>
+          Import
+        </button>
+        <button class="data-btn" onclick="resetCredentials()" title="Change Gist credentials" style="flex:0;padding:6px 8px;">⚙</button>
+      </div>
+      <div id="sync-status" style="font-size:10px;font-family:'Geist Mono',monospace;margin-top:8px;color:var(--text-dim);text-align:center;">◌ Connecting...</div>
+      <input type="file" id="import-file-input" accept=".json" style="display:none" onchange="handleImportFile(this)">
+    </div>
+  </aside>
+
+  <!-- ─── MAIN CONTENT ─────────────────────────── -->
+  <main class="main">
+    <div id="main-content" class="main-content">
+
+    <!-- Header -->
+    <div class="page-header">
+      <div>
+        <div class="page-title">Good morning.</div>
+        <div class="page-date" id="live-date">Loading...</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <div style="font-size:12px;color:var(--text-muted);font-family:'Geist Mono',monospace;" id="live-time"></div>
+      </div>
+    </div>
+
+    <!-- Stat row -->
+    <div class="stat-row">
+      <div class="stat-chip">
+        <div class="stat-val" id="stat-tasks">0</div>
+        <div class="stat-label">Tasks today</div>
+      </div>
+      <div class="stat-chip">
+        <div class="stat-val" id="stat-lectures">0</div>
+        <div class="stat-label">Lectures pending</div>
+      </div>
+      <div class="stat-chip">
+        <div class="stat-val" id="stat-projects">0</div>
+        <div class="stat-label">Active projects</div>
+      </div>
+      <div class="stat-chip">
+        <div class="stat-val" id="stat-review">0</div>
+        <div class="stat-label">To review</div>
+      </div>
+    </div>
+
+    <!-- Calendar strip -->
+    <div class="cal-strip" id="cal-strip"></div>
+
+    <!-- GCal events preview -->
+    <div class="cal-events-preview" id="gcal-section">
+      <div class="cal-events-title">↗ Google Calendar — Today's Events</div>
+      <div id="gcal-events">
+        <div class="event-row">
+          <span class="event-time">—</span>
+          <span class="event-dot" style="background:var(--text-muted)"></span>
+          <span class="event-name" style="color:var(--text-muted);font-size:12px;">Connect Google Calendar to see your events here</span>
+          <span class="event-tag" style="background:var(--surface3);color:var(--text-muted);">GCal</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── TODAY SECTION ─── -->
+    <div id="today" class="section-gap"></div>
+    <div class="section-heading">Daily Planning</div>
+
+    <div class="grid-2" style="margin-bottom:20px;">
+
+      <!-- Today's Tasks -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="card-title-icon">◈</span> Today</div>
+          <span class="card-badge" id="today-count">0 tasks</span>
+        </div>
+        <div class="card-body" id="today-tasks">
+          <div class="check-item" data-done="false">
+            <div class="checkbox" onclick="toggleCheck(this)"></div>
+            <div class="check-label"><input class="inline-input" placeholder="Add a task..."></div>
+            <div class="check-meta">
+              <span class="due ok">Today</span>
+              <span class="task-actions">
+                <span class="task-action-btn" onclick="moveToTomorrow(this)" title="Move to tomorrow">→</span>
+                <span class="task-action-btn remove" onclick="removeTask(this)" title="Remove">×</span>
+              </span>
+            </div>
+          </div>
+          <div class="check-item" data-done="false">
+            <div class="checkbox" onclick="toggleCheck(this)"></div>
+            <div class="check-label"><input class="inline-input" value="Review path slides from Monday"></div>
+            <div class="check-meta">
+              <span class="due ok">Today</span>
+              <span class="task-actions">
+                <span class="task-action-btn" onclick="moveToTomorrow(this)" title="Move to tomorrow">→</span>
+                <span class="task-action-btn remove" onclick="removeTask(this)" title="Remove">×</span>
+              </span>
+            </div>
+          </div>
+          <div class="check-item" data-done="false">
+            <div class="checkbox" onclick="toggleCheck(this)"></div>
+            <div class="check-label"><input class="inline-input" value="AMBOSS — Cardio block Qs"></div>
+            <div class="check-meta">
+              <span class="due soon">2 hrs</span>
+              <span class="task-actions">
+                <span class="task-action-btn" onclick="moveToTomorrow(this)" title="Move to tomorrow">→</span>
+                <span class="task-action-btn remove" onclick="removeTask(this)" title="Remove">×</span>
+              </span>
+            </div>
+          </div>
+        </div>
+        <div style="padding:0 20px 16px">
+          <button class="add-btn" onclick="addCheckItem('today-tasks')">+ Add task</button>
+        </div>
+        <div style="padding:0 20px 16px;border-top:1px solid var(--border);">
+          <div style="font-size:11px;color:var(--text-muted);font-family:'Geist Mono',monospace;margin-bottom:6px;text-transform:uppercase;letter-spacing:.8px;">Notes / Intentions</div>
+          <textarea class="note-area" placeholder="What's the focus today? Any intentions, reminders, or context..."></textarea>
+        </div>
+      </div>
+
+      <!-- Time blocks -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="card-title-icon">◷</span> Time Blocks</div>
+          <button class="add-btn" style="padding:0" onclick="addTimeBlock('today-time-blocks')">+ Add block</button>
+        </div>
+        <div class="card-body" id="today-time-blocks">
+          <div class="time-block">
+            <div class="time-slot"><input class="inline-input" value="6:00" style="width:44px;font-family:'Geist Mono',monospace;font-size:11px;color:var(--text-muted)"></div>
+            <div class="time-content"><div class="time-task"><input class="inline-input" value="Morning review + Anki" style="flex:1"><span class="time-badge">Focus</span></div></div>
+            <div class="block-remove" onclick="removeTimeBlock(this)">−</div>
+          </div>
+          <div class="time-block">
+            <div class="time-slot"><input class="inline-input" value="8:00" style="width:44px;font-family:'Geist Mono',monospace;font-size:11px;color:var(--text-muted)"></div>
+            <div class="time-content"><div class="time-task"><input class="inline-input" value="Lecture block — Renal physiology"></div></div>
+            <div class="block-remove" onclick="removeTimeBlock(this)">−</div>
+          </div>
+          <div class="time-block">
+            <div class="time-slot"><input class="inline-input" value="10:00" style="width:44px;font-family:'Geist Mono',monospace;font-size:11px;color:var(--text-muted)"></div>
+            <div class="time-content"><div class="time-task"><input class="inline-input" value="AMBOSS question set (30 Qs)"></div></div>
+            <div class="block-remove" onclick="removeTimeBlock(this)">−</div>
+          </div>
+          <div class="time-block">
+            <div class="time-slot"><input class="inline-input" value="13:00" style="width:44px;font-family:'Geist Mono',monospace;font-size:11px;color:var(--text-muted)"></div>
+            <div class="time-content"><div class="time-task"><input class="inline-input" value="Research — Literature review"></div></div>
+            <div class="block-remove" onclick="removeTimeBlock(this)">−</div>
+          </div>
+          <div class="time-block">
+            <div class="time-slot"><input class="inline-input" value="16:00" style="width:44px;font-family:'Geist Mono',monospace;font-size:11px;color:var(--text-muted)"></div>
+            <div class="time-content"><div class="time-task"><input class="inline-input" value="Free block / errands"></div></div>
+            <div class="block-remove" onclick="removeTimeBlock(this)">−</div>
+          </div>
+          <div class="time-block">
+            <div class="time-slot"><input class="inline-input" value="19:00" style="width:44px;font-family:'Geist Mono',monospace;font-size:11px;color:var(--text-muted)"></div>
+            <div class="time-content"><div class="time-task"><input class="inline-input" placeholder="Add time block..."></div></div>
+            <div class="block-remove" onclick="removeTimeBlock(this)">−</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ─── TOMORROW ─── -->
+    <div id="tomorrow" class="section-gap"></div>
+    <div class="section-heading">Tomorrow</div>
+
+    <div class="grid-2" style="margin-bottom:20px;">
+
+      <!-- Tomorrow's Tasks -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="card-title-icon">→</span> Tomorrow</div>
+          <span class="card-badge" id="tmrw-count">0 tasks</span>
+        </div>
+        <div class="card-body" id="tmrw-tasks">
+          <div class="check-item" data-done="false">
+            <div class="checkbox" onclick="toggleCheck(this)"></div>
+            <div class="check-label"><input class="inline-input" value="Submit research abstract draft"></div>
+            <div class="check-meta"><span class="due soon">Tmrw</span><span class="task-actions"><span class="task-action-btn remove" onclick="removeTask(this)" title="Remove">×</span></span></div>
+          </div>
+          <div class="check-item" data-done="false">
+            <div class="checkbox" onclick="toggleCheck(this)"></div>
+            <div class="check-label"><input class="inline-input" value="Watch hematology lecture 3 & 4"></div>
+            <div class="check-meta"><span class="due ok">Tmrw</span><span class="task-actions"><span class="task-action-btn remove" onclick="removeTask(this)" title="Remove">×</span></span></div>
+          </div>
+          <div class="check-item" data-done="false">
+            <div class="checkbox" onclick="toggleCheck(this)"></div>
+            <div class="check-label"><input class="inline-input" placeholder="Add a task..."></div>
+            <div class="check-meta"><span class="task-actions"><span class="task-action-btn remove" onclick="removeTask(this)" title="Remove">×</span></span></div>
+          </div>
+        </div>
+        <div style="padding:0 20px 16px">
+          <button class="add-btn" onclick="addCheckItem('tmrw-tasks')">+ Add task</button>
+        </div>
+        <div style="padding:0 20px 16px;border-top:1px solid var(--border);">
+          <div style="font-size:11px;color:var(--text-muted);font-family:'Geist Mono',monospace;margin-bottom:6px;text-transform:uppercase;letter-spacing:.8px;">Notes / Intentions</div>
+          <textarea class="note-area" placeholder="What do you want to focus on tomorrow? Any intentions, reminders, or prep needed..."></textarea>
+        </div>
+      </div>
+
+      <!-- Tomorrow Time blocks -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="card-title-icon">◷</span> Time Blocks</div>
+          <button class="add-btn" style="padding:0" onclick="addTimeBlock('tmrw-time-blocks')">+ Add block</button>
+        </div>
+        <div class="card-body" id="tmrw-time-blocks">
+          <div class="time-block">
+            <div class="time-slot"><input class="inline-input" value="6:00" style="width:44px;font-family:'Geist Mono',monospace;font-size:11px;color:var(--text-muted)"></div>
+            <div class="time-content"><div class="time-task"><input class="inline-input" placeholder="Morning block..." style="flex:1"></div></div>
+            <div class="block-remove" onclick="removeTimeBlock(this)">−</div>
+          </div>
+          <div class="time-block">
+            <div class="time-slot"><input class="inline-input" value="8:00" style="width:44px;font-family:'Geist Mono',monospace;font-size:11px;color:var(--text-muted)"></div>
+            <div class="time-content"><div class="time-task"><input class="inline-input" value="Lecture block — Hematology"></div></div>
+            <div class="block-remove" onclick="removeTimeBlock(this)">−</div>
+          </div>
+          <div class="time-block">
+            <div class="time-slot"><input class="inline-input" value="10:00" style="width:44px;font-family:'Geist Mono',monospace;font-size:11px;color:var(--text-muted)"></div>
+            <div class="time-content"><div class="time-task"><input class="inline-input" placeholder="Add time block..."></div></div>
+            <div class="block-remove" onclick="removeTimeBlock(this)">−</div>
+          </div>
+          <div class="time-block">
+            <div class="time-slot"><input class="inline-input" value="13:00" style="width:44px;font-family:'Geist Mono',monospace;font-size:11px;color:var(--text-muted)"></div>
+            <div class="time-content"><div class="time-task"><input class="inline-input" value="Research abstract draft"></div></div>
+            <div class="block-remove" onclick="removeTimeBlock(this)">−</div>
+          </div>
+          <div class="time-block">
+            <div class="time-slot"><input class="inline-input" value="16:00" style="width:44px;font-family:'Geist Mono',monospace;font-size:11px;color:var(--text-muted)"></div>
+            <div class="time-content"><div class="time-task"><input class="inline-input" placeholder="Add time block..."></div></div>
+            <div class="block-remove" onclick="removeTimeBlock(this)">−</div>
+          </div>
+          <div class="time-block">
+            <div class="time-slot"><input class="inline-input" value="19:00" style="width:44px;font-family:'Geist Mono',monospace;font-size:11px;color:var(--text-muted)"></div>
+            <div class="time-content"><div class="time-task"><input class="inline-input" placeholder="Evening block..."></div></div>
+            <div class="block-remove" onclick="removeTimeBlock(this)">−</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ─── TOMORROW COMPLETED ─── -->
+    <div style="margin-bottom:20px;">
+      <div class="completed-drawer">
+        <div class="completed-drawer-header" onclick="toggleCompleted()">
+          <span style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:11px;font-family:'Geist Mono',monospace;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;">✓ Completed Tasks</span>
+            <span class="card-badge" id="completed-count">0</span>
+          </span>
+          <span id="completed-chevron" style="font-size:10px;color:var(--text-muted);transition:transform 0.2s;">▶</span>
+        </div>
+        <div id="completed-list" class="completed-list" style="display:none;"></div>
+      </div>
+    </div>
+
+    <!-- ─── WEEKLY ─── -->
+    <div id="weekly" class="section-gap"></div>
+    <div class="section-heading">Weekly Academic To-Do</div>
+
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-header">
+        <div class="card-title"><span class="card-title-icon">◫</span> This Week</div>
+        <span class="card-badge" id="weekly-count">0 remaining</span>
+      </div>
+      <div class="card-body" id="weekly-tasks">
+        <div class="check-item" data-done="false">
+          <div class="checkbox" onclick="toggleCheck(this)"></div>
+          <div class="check-label"><input class="inline-input" value="Complete Step 1 Neurology block"></div>
+          <div class="check-meta"><span class="due soon">Wed</span><span class="task-actions"><span class="task-action-btn remove" onclick="removeTask(this)" title="Remove">×</span></span></div>
+        </div>
+        <div class="check-item" data-done="false">
+          <div class="checkbox" onclick="toggleCheck(this)"></div>
+          <div class="check-label"><input class="inline-input" value="Read 2 papers for journal club"></div>
+          <div class="check-meta"><span class="due ok">Fri</span><span class="task-actions"><span class="task-action-btn remove" onclick="removeTask(this)" title="Remove">×</span></span></div>
+        </div>
+        <div class="check-item" data-done="false">
+          <div class="checkbox" onclick="toggleCheck(this)"></div>
+          <div class="check-label"><input class="inline-input" value="Finish biochem AMBOSS chapter"></div>
+          <div class="check-meta"><span class="due overdue">Overdue</span><span class="task-actions"><span class="task-action-btn remove" onclick="removeTask(this)" title="Remove">×</span></span></div>
+        </div>
+        <div class="check-item" data-done="false">
+          <div class="checkbox" onclick="toggleCheck(this)"></div>
+          <div class="check-label"><input class="inline-input" value="Write research methods section"></div>
+          <div class="check-meta"><span class="due ok">Fri</span><span class="task-actions"><span class="task-action-btn remove" onclick="removeTask(this)" title="Remove">×</span></span></div>
+        </div>
+        <div class="check-item" data-done="false">
+          <div class="checkbox" onclick="toggleCheck(this)"></div>
+          <div class="check-label"><input class="inline-input" placeholder="Add task..."></div>
+          <div class="check-meta"><span class="task-actions"><span class="task-action-btn remove" onclick="removeTask(this)" title="Remove">×</span></span></div>
+        </div>
+      </div>
+      <div style="padding:0 20px 16px">
+        <button class="add-btn" onclick="addCheckItem('weekly-tasks')">+ Add task</button>
+      </div>
+    </div>
+    <!-- Weekly completed drawer -->
+    <div style="margin-bottom:20px;">
+      <div class="completed-drawer">
+        <div class="completed-drawer-header" onclick="toggleSectionCompleted('weekly-completed-list','weekly-completed-chevron')">
+          <span style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:11px;font-family:'Geist Mono',monospace;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;">✓ Completed This Week</span>
+            <span class="card-badge" id="weekly-completed-count">0</span>
+          </span>
+          <span id="weekly-completed-chevron" style="font-size:10px;color:var(--text-muted);transition:transform 0.2s;">▶</span>
+        </div>
+        <div id="weekly-completed-list" class="completed-list" style="display:none;"></div>
+      </div>
+    </div>
+
+    <!-- ─── RESEARCH PROJECTS ─── -->
+    <div id="projects" class="section-gap"></div>
+    <div class="section-heading">Research Project Tracker</div>
+
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-header">
+        <div class="card-title"><span class="card-title-icon">⬡</span> Active Projects</div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <button class="add-btn" style="padding:0;color:var(--red);opacity:0.6;" onclick="clearSection('projects-list','project-block','projects')">Clear all</button>
+          <button class="add-btn" style="padding:0" onclick="addProject()">+ New project</button>
+        </div>
+      </div>
+      <div class="card-body" id="projects-list">
+
+        <!-- Project 1 -->
+        <div class="project-block">
+          <div class="project-header" onclick="toggleProject(this)">
+            <span class="project-name">
+              <button class="collapse-btn open" onclick="event.stopPropagation()">▶</button>
+              <span class="proj-title-text">IL-6 Signaling in Acute Kidney Injury</span>
+            </span>
+            <div style="display:flex;align-items:center;gap:10px;" onclick="event.stopPropagation()">
+              <div class="progress-bar-wrap"><div class="progress-bar" style="width:40%"></div></div>
+              <span class="project-progress">2/5</span>
+              <span class="proj-due-label" onclick="editProjectDue(this)" title="Click to edit due date" style="cursor:pointer;">
+                <span style="font-size:9px;color:var(--text-dim);font-family:'Geist Mono',monospace;display:block;text-transform:uppercase;letter-spacing:.5px;">Due</span>
+                <span class="due soon proj-due-val">Apr 15</span>
+              </span>
+            </div>
+          </div>
+          <div class="project-tasks">
+            <div class="task-row done">
+              <div class="task-indent"></div>
+              <div class="checkbox checked" onclick="toggleProjectTask(this)"></div>
+              <div class="task-name">Literature review</div>
+            </div>
+            <div class="task-row done">
+              <div class="task-indent"></div>
+              <div class="checkbox checked" onclick="toggleProjectTask(this)"></div>
+              <div class="task-name">Research proposal submitted</div>
+            </div>
+            <div class="task-row">
+              <div class="task-indent"></div>
+              <div class="checkbox" onclick="toggleProjectTask(this)"></div>
+              <div class="task-name">Methods section draft</div>
+            </div>
+            <div class="task-row">
+              <div class="task-indent"></div>
+              <div class="checkbox" onclick="toggleProjectTask(this)"></div>
+              <div class="task-name">Data collection & analysis</div>
+            </div>
+            <div class="task-row">
+              <div class="task-indent"></div>
+              <div class="checkbox" onclick="toggleProjectTask(this)"></div>
+              <div class="task-name">Final manuscript draft</div>
+            </div>
+          </div>
+          <div class="project-footer">
+            <button class="add-btn" onclick="addMilestone(this)">+ Add milestone</button>
+            <button class="complete-project-btn" onclick="completeProject(this)" style="display:none;">✓ Mark Project Complete</button>
+          </div>
+        </div>
+
+        <!-- Project 2 -->
+        <div class="project-block">
+          <div class="project-header" onclick="toggleProject(this)">
+            <span class="project-name">
+              <button class="collapse-btn open" onclick="event.stopPropagation()">▶</button>
+              <span class="proj-title-text">Clinical Outcomes in Post-COVID Fatigue</span>
+            </span>
+            <div style="display:flex;align-items:center;gap:10px;" onclick="event.stopPropagation()">
+              <div class="progress-bar-wrap"><div class="progress-bar" style="width:16%"></div></div>
+              <span class="project-progress">1/4</span>
+              <span class="proj-due-label" onclick="editProjectDue(this)" title="Click to edit due date" style="cursor:pointer;">
+                <span style="font-size:9px;color:var(--text-dim);font-family:'Geist Mono',monospace;display:block;text-transform:uppercase;letter-spacing:.5px;">Due</span>
+                <span class="due ok proj-due-val">Jun 1</span>
+              </span>
+            </div>
+          </div>
+          <div class="project-tasks">
+            <div class="task-row done">
+              <div class="task-indent"></div>
+              <div class="checkbox checked" onclick="toggleProjectTask(this)"></div>
+              <div class="task-name">IRB application submitted</div>
+            </div>
+            <div class="task-row">
+              <div class="task-indent"></div>
+              <div class="checkbox" onclick="toggleProjectTask(this)"></div>
+              <div class="task-name">IRB approval pending</div>
+            </div>
+            <div class="task-row">
+              <div class="task-indent"></div>
+              <div class="checkbox" onclick="toggleProjectTask(this)"></div>
+              <div class="task-name">Patient recruitment protocol</div>
+            </div>
+            <div class="task-row">
+              <div class="task-indent"></div>
+              <div class="checkbox" onclick="toggleProjectTask(this)"></div>
+              <div class="task-name">Data collection phase</div>
+            </div>
+          </div>
+          <div class="project-footer">
+            <button class="add-btn" onclick="addMilestone(this)">+ Add milestone</button>
+            <button class="complete-project-btn" onclick="completeProject(this)" style="display:none;">✓ Mark Project Complete</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <!-- Projects completed drawer -->
+    <div style="margin-bottom:20px;">
+      <div class="completed-drawer">
+        <div class="completed-drawer-header" onclick="toggleSectionCompleted('projects-completed-list','projects-completed-chevron')">
+          <span style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:11px;font-family:'Geist Mono',monospace;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;">✓ Completed Projects</span>
+            <span class="card-badge" id="projects-completed-count">0</span>
+          </span>
+          <span id="projects-completed-chevron" style="font-size:10px;color:var(--text-muted);transition:transform 0.2s;">▶</span>
+        </div>
+        <div id="projects-completed-list" class="completed-list" style="display:none;"></div>
+      </div>
+    </div>
+
+    <!-- ─── WHITEBOARD ─── -->
+    <div id="whiteboard" class="section-gap"></div>
+    <div class="section-heading">Whiteboard Sessions</div>
+
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-header">
+        <div class="card-title"><span class="card-title-icon">◻</span> Ideas & Sessions</div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <button class="add-btn" style="padding:0;color:var(--red);opacity:0.6;" onclick="clearSection('wb-list','wb-item','whiteboard')">Clear all</button>
+          <button class="add-btn" style="padding:0" onclick="addWbItem()">+ Add</button>
+        </div>
+      </div>
+      <div class="card-body" id="wb-list">
+        <div class="wb-item">
+          <div class="checkbox" onclick="markWbDone(this)"></div>
+          <div class="wb-text"><input class="inline-input" value="Renal pathophysiology — concept map"></div>
+          <span class="wb-tag" style="background:var(--accent-soft);color:var(--accent);border:1px solid rgba(124,106,247,0.2);cursor:pointer" onclick="cycleWbTag(this)">Concept</span>
+        </div>
+        <div class="wb-item">
+          <div class="checkbox" onclick="markWbDone(this)"></div>
+          <div class="wb-text"><input class="inline-input" value="Differential for acute dyspnea — flowchart"></div>
+          <span class="wb-tag" style="background:var(--green-soft);color:var(--green);border:1px solid rgba(52,211,153,0.2);cursor:pointer" onclick="cycleWbTag(this)">Clinical</span>
+        </div>
+        <div class="wb-item">
+          <div class="checkbox" onclick="markWbDone(this)"></div>
+          <div class="wb-text"><input class="inline-input" value="Research hypothesis brainstorm — COVID fatigue mechanisms"></div>
+          <span class="wb-tag" style="background:var(--amber-soft);color:var(--amber);border:1px solid rgba(251,191,36,0.2);cursor:pointer" onclick="cycleWbTag(this)">Research</span>
+        </div>
+        <div class="wb-item">
+          <div class="checkbox" onclick="markWbDone(this)"></div>
+          <div class="wb-text"><input class="inline-input" placeholder="New whiteboard session..."></div>
+          <span class="wb-tag" style="background:var(--surface3);color:var(--text-muted);cursor:pointer" onclick="cycleWbTag(this)">—</span>
+        </div>
+      </div>
+    </div>
+    <!-- Whiteboard completed drawer -->
+    <div style="margin-bottom:20px;">
+      <div class="completed-drawer">
+        <div class="completed-drawer-header" onclick="toggleSectionCompleted('wb-completed-list','wb-completed-chevron')">
+          <span style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:11px;font-family:'Geist Mono',monospace;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;">✓ Completed Sessions</span>
+            <span class="card-badge" id="wb-completed-count">0</span>
+          </span>
+          <span id="wb-completed-chevron" style="font-size:10px;color:var(--text-muted);transition:transform 0.2s;">▶</span>
+        </div>
+        <div id="wb-completed-list" class="completed-list" style="display:none;"></div>
+      </div>
+    </div>
+
+    <!-- ─── LECTURES ─── -->
+    <div id="lectures" class="section-gap"></div>
+    <div class="section-heading">Lecture List</div>
+
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-header">
+        <div class="card-title"><span class="card-title-icon">▶</span> Lectures</div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <button class="add-btn" style="padding:0;color:var(--red);opacity:0.6;" onclick="clearSection('lecture-list','dual-row','lectures')">Clear all</button>
+          <button class="add-btn" style="padding:0" onclick="addLecture()">+ Add lecture</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="dual-headers">
+          <div style="width:18px;flex-shrink:0;"></div>
+          <div style="flex:1;"></div>
+          <div class="dual-h-label">Watched</div>
+          <div class="dual-h-label">AMBOSS</div>
+        </div>
+        <div id="lecture-list">
+          <div class="dual-row" data-watched="false" data-amboss="false">
+            <div class="lec-remove" onclick="removeLecture(this)">−</div>
+            <div class="dual-label"><input class="inline-input" value="Renal Physiology — Tubular Transport"></div>
+            <div class="check-col"><span class="check-col-label">watched</span><div class="checkbox" onclick="toggleDual(this,'watched')"></div></div>
+            <div class="check-col"><span class="check-col-label">amboss</span><div class="checkbox" onclick="toggleDual(this,'amboss')"></div></div>
+          </div>
+          <div class="dual-row" data-watched="true" data-amboss="false">
+            <div class="lec-remove" onclick="removeLecture(this)">−</div>
+            <div class="dual-label"><input class="inline-input" value="Cardiovascular — Heart Failure Pathophysiology"></div>
+            <div class="check-col"><span class="check-col-label">watched</span><div class="checkbox checked" onclick="toggleDual(this,'watched')"></div></div>
+            <div class="check-col"><span class="check-col-label">amboss</span><div class="checkbox" onclick="toggleDual(this,'amboss')"></div></div>
+          </div>
+          <div class="dual-row fully-done" data-watched="true" data-amboss="true">
+            <div class="lec-remove" onclick="removeLecture(this)">−</div>
+            <div class="dual-label"><input class="inline-input" value="Pulmonology — Obstructive Lung Disease"></div>
+            <div class="check-col"><span class="check-col-label">watched</span><div class="checkbox checked" onclick="toggleDual(this,'watched')"></div></div>
+            <div class="check-col"><span class="check-col-label">amboss</span><div class="checkbox checked" onclick="toggleDual(this,'amboss')"></div></div>
+          </div>
+          <div class="dual-row" data-watched="false" data-amboss="false">
+            <div class="lec-remove" onclick="removeLecture(this)">−</div>
+            <div class="dual-label"><input class="inline-input" value="Hematology — Clotting Cascades"></div>
+            <div class="check-col"><span class="check-col-label">watched</span><div class="checkbox" onclick="toggleDual(this,'watched')"></div></div>
+            <div class="check-col"><span class="check-col-label">amboss</span><div class="checkbox" onclick="toggleDual(this,'amboss')"></div></div>
+          </div>
+          <div class="dual-row" data-watched="false" data-amboss="false">
+            <div class="lec-remove" onclick="removeLecture(this)">−</div>
+            <div class="dual-label"><input class="inline-input" placeholder="Add lecture..."></div>
+            <div class="check-col"><span class="check-col-label">watched</span><div class="checkbox" onclick="toggleDual(this,'watched')"></div></div>
+            <div class="check-col"><span class="check-col-label">amboss</span><div class="checkbox" onclick="toggleDual(this,'amboss')"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Lectures completed drawer -->
+    <div style="margin-bottom:20px;">
+      <div class="completed-drawer">
+        <div class="completed-drawer-header" onclick="toggleSectionCompleted('lectures-completed-list','lectures-completed-chevron')">
+          <span style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:11px;font-family:'Geist Mono',monospace;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;">✓ Completed Lectures</span>
+            <span class="card-badge" id="lectures-completed-count">0</span>
+          </span>
+          <span id="lectures-completed-chevron" style="font-size:10px;color:var(--text-muted);transition:transform 0.2s;">▶</span>
+        </div>
+        <div id="lectures-completed-list" class="completed-list" style="display:none;"></div>
+      </div>
+    </div>
+
+    <!-- ─── REVIEW QUEUE ─── -->
+    <div id="review" class="section-gap"></div>
+    <div class="section-heading">Review Queue</div>
+
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-header">
+        <div class="card-title"><span class="card-title-icon">↺</span> To Go Back & Review</div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <button class="add-btn" style="padding:0;color:var(--red);opacity:0.6;" onclick="clearSection('review-list','review-item','review')">Clear all</button>
+          <button class="add-btn" style="padding:0" onclick="addReviewItem()">+ Add</button>
+        </div>
+      </div>
+      <div class="card-body" id="review-list">
+        <div class="review-item">
+          <span class="review-pill" style="background:var(--red-soft);color:var(--red);border:1px solid rgba(248,113,113,0.2);cursor:pointer" onclick="cyclePriority(this)">High</span>
+          <div class="review-name"><input class="inline-input" value="Acid-base disorders — keep getting mixed up on type 4 RTA"></div>
+          <div class="review-check-col">
+            <div class="checkbox" onclick="toggleReviewDone(this)"></div>
+          </div>
+        </div>
+        <div class="review-item">
+          <span class="review-pill" style="background:var(--amber-soft);color:var(--amber);border:1px solid rgba(251,191,36,0.2);cursor:pointer" onclick="cyclePriority(this)">Med</span>
+          <div class="review-name"><input class="inline-input" value="Coagulation cascade — factor review"></div>
+          <div class="review-check-col">
+            <div class="checkbox" onclick="toggleReviewDone(this)"></div>
+          </div>
+        </div>
+        <div class="review-item">
+          <span class="review-pill" style="background:var(--green-soft);color:var(--green);border:1px solid rgba(52,211,153,0.2);cursor:pointer" onclick="cyclePriority(this)">Low</span>
+          <div class="review-name"><input class="inline-input" value="Embryology lecture — week 3-4 concepts"></div>
+          <div class="review-check-col">
+            <div class="checkbox" onclick="toggleReviewDone(this)"></div>
+          </div>
+        </div>
+        <div class="review-item">
+          <span class="review-pill" style="background:var(--amber-soft);color:var(--amber);border:1px solid rgba(251,191,36,0.2);cursor:pointer" onclick="cyclePriority(this)">Med</span>
+          <div class="review-name"><input class="inline-input" placeholder="Add lecture to review..."></div>
+          <div class="review-check-col">
+            <div class="checkbox" onclick="toggleReviewDone(this)"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Review completed drawer -->
+    <div style="margin-bottom:40px;">
+      <div class="completed-drawer">
+        <div class="completed-drawer-header" onclick="toggleSectionCompleted('review-completed-list','review-completed-chevron')">
+          <span style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:11px;font-family:'Geist Mono',monospace;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;">✓ Reviewed</span>
+            <span class="card-badge" id="review-completed-count">0</span>
+          </span>
+          <span id="review-completed-chevron" style="font-size:10px;color:var(--text-muted);transition:transform 0.2s;">▶</span>
+        </div>
+        <div id="review-completed-list" class="completed-list" style="display:none;"></div>
+      </div>
+    </div><!-- end review completed drawer -->
+
+    </div><!-- end #main-content -->
+
+  </main>
+</div>
+
+<button class="help-btn" onclick="showKbdModal()" title="Keyboard shortcuts">?</button>
+<div class="toast" id="rollover-toast"></div>
+
+<script>
+  // ─── DATE & TIME ──────────────────────────────
+  function updateDateTime() {
+    const now = new Date();
+    const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    document.getElementById('live-date').textContent =
+      `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
+    const h = now.getHours().toString().padStart(2,'0');
+    const m = now.getMinutes().toString().padStart(2,'0');
+    document.getElementById('live-time').textContent = `${h}:${m}`;
+  }
+  updateDateTime();
+  setInterval(updateDateTime, 1000);
+
+  // ─── STORAGE HELPERS ─────────────────────────
+  // Converts PST offset: UTC-8 standard, UTC-7 daylight.
+  // We use a fixed UTC-8 for simplicity (conservative — 4am PST = noon UTC).
+  function getPSTDateString() {
+    const now = new Date();
+    const pst = new Date(now.getTime() - 8 * 60 * 60 * 1000);
+    return `${pst.getUTCFullYear()}-${pst.getUTCMonth()}-${pst.getUTCDate()}`;
+  }
+
+  function getPSTHour() {
+    const now = new Date();
+    const pst = new Date(now.getTime() - 8 * 60 * 60 * 1000);
+    return pst.getUTCHours();
+  }
+
+  // ─── GIST SYNC CONFIG ────────────────────────
+  // Credentials stored in localStorage only, never hardcoded
+  let GIST_ID    = localStorage.getItem('aos_gist_id')    || '';
+  let GIST_TOKEN = localStorage.getItem('aos_gist_token') || '';
+  const GIST_FILE  = 'academic-os-data.json';
+  let gistSaveTimer = null;
+  let lastSyncTime  = null;
+
+  function gistConfigured() { return GIST_ID && GIST_TOKEN; }
+
+  function showSetupScreen() {
+    document.getElementById('main-content').classList.add('hidden');
+    const existing = document.getElementById('setup-screen');
+    if (existing) { existing.style.display = 'flex'; return; }
+    const el = document.createElement('div');
+    el.id = 'setup-screen';
+    el.style.cssText = `
+      position:fixed;inset:0;background:var(--bg);
+      display:flex;align-items:center;justify-content:center;z-index:9999;`;
+    el.innerHTML = `
+      <div style="background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:40px;width:460px;max-width:90vw;">
+        <div style="font-family:'DM Serif Display',serif;font-size:24px;margin-bottom:4px;">Academic OS</div>
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:28px;">Personal academic dashboard for medical students.</div>
+
+        <div style="margin-bottom:16px;">
+          <div style="font-size:11px;font-family:'Geist Mono',monospace;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">GitHub Gist ID</div>
+          <input id="setup-gist-id" class="inline-input" style="width:100%;padding:10px 12px;background:var(--surface3);border:1px solid var(--border2);border-radius:8px;font-size:13px;" placeholder="b5c65dfd2c29f0f0056a2906...">
+          <div style="font-size:11px;color:var(--text-dim);margin-top:4px;">The long ID at the end of your gist.github.com URL</div>
+        </div>
+
+        <div style="margin-bottom:24px;">
+          <div style="font-size:11px;font-family:'Geist Mono',monospace;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">GitHub Personal Access Token</div>
+          <input id="setup-token" class="inline-input" type="password" style="width:100%;padding:10px 12px;background:var(--surface3);border:1px solid var(--border2);border-radius:8px;font-size:13px;" placeholder="ghp_...">
+          <div style="font-size:11px;color:var(--text-dim);margin-top:4px;">Token needs only <code style="background:var(--surface3);padding:1px 4px;border-radius:3px;">gist</code> scope — <a href="https://github.com/settings/tokens" target="_blank" style="color:var(--accent)">generate one here</a></div>
+        </div>
+
+        <button onclick="saveSetup()" style="width:100%;background:var(--accent);color:white;border:none;border-radius:8px;padding:12px;font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;margin-bottom:10px;">
+          Connect & Launch →
+        </button>
+        <button onclick="launchAsVisitor()" style="width:100%;background:transparent;color:var(--text-muted);border:1px solid var(--border2);border-radius:8px;padding:11px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text-muted)'">
+          I'm a visitor — just let me explore
+        </button>
+        <div id="setup-error" style="color:var(--red);font-size:12px;margin-top:10px;text-align:center;display:none;"></div>
+      </div>`;
+    document.body.appendChild(el);
+  }
+
+  function launchAsVisitor() {
+    document.getElementById('setup-screen').style.display = 'none';
+    document.getElementById('main-content').classList.remove('hidden');
+    document.getElementById('sync-status').textContent = '◌ Visitor mode';
+    // Init without gist sync
+    updateCounts();
+    document.querySelectorAll('.project-block').forEach(updateProjectProgress);
+    restoreCompleted();
+    initAllDrag();
+    checkRollover();
+    setInterval(() => { checkRollover(); saveState(); }, 60 * 1000);
+  }
+
+  async function saveSetup() {
+    const id    = document.getElementById('setup-gist-id').value.trim();
+    const token = document.getElementById('setup-token').value.trim();
+    const errEl = document.getElementById('setup-error');
+    if (!id || !token) { errEl.textContent = 'Both fields required.'; errEl.style.display='block'; return; }
+
+    // Test the credentials
+    errEl.style.display = 'none';
+    const btn = document.querySelector('#setup-screen button');
+    btn.textContent = 'Connecting...'; btn.disabled = true;
+
+    try {
+      const resp = await fetch(`https://api.github.com/gists/${id}`, {
+        headers: { 'Authorization': `token ${token}` }
+      });
+      if (!resp.ok) throw new Error('Invalid credentials — check your Gist ID and token');
+
+      localStorage.setItem('aos_gist_id',    id);
+      localStorage.setItem('aos_gist_token', token);
+      GIST_ID    = id;
+      GIST_TOKEN = token;
+
+      document.getElementById('setup-screen').style.display = 'none';
+      document.getElementById('main-content').classList.remove('hidden');
+
+      // Pull any existing data then init
+      await pullFromGist();
+      updateCounts();
+      document.querySelectorAll('.project-block').forEach(updateProjectProgress);
+      restoreCompleted();
+      initAllDrag();
+      checkRollover();
+    } catch(e) {
+      errEl.textContent = e.message || 'Connection failed. Check your credentials.';
+      errEl.style.display = 'block';
+      btn.textContent = 'Connect & Launch →'; btn.disabled = false;
+    }
+  }
+
+  function setSyncStatus(state) {
+    // states: 'syncing' | 'saved' | 'error' | 'offline'
+    const el = document.getElementById('sync-status');
+    if (!el) return;
+    const configs = {
+      syncing: { text: '↑ Syncing...', color: 'var(--text-muted)' },
+      saved:   { text: '✓ Synced',     color: 'var(--green)'      },
+      error:   { text: '✕ Sync error', color: 'var(--red)'        },
+      offline: { text: '◌ Offline',    color: 'var(--amber)'      },
+    };
+    const c = configs[state] || configs.offline;
+    el.textContent = c.text;
+    el.style.color = c.color;
+    if (state === 'saved') {
+      lastSyncTime = new Date();
+      setTimeout(() => {
+        if (el) el.textContent = '✓ Synced ' + formatSyncTime(lastSyncTime);
+      }, 2000);
+    }
+  }
+
+  function formatSyncTime(d) {
+    if (!d) return '';
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  async function pushToGist() {
+    try {
+      setSyncStatus('syncing');
+      // Collect all aos_ keys
+      const backup = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.startsWith('aos_')) backup[key] = localStorage.getItem(key);
+      }
+      const resp = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `token ${GIST_TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          files: { [GIST_FILE]: { content: JSON.stringify(backup, null, 2) } }
+        })
+      });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      setSyncStatus('saved');
+    } catch(e) {
+      setSyncStatus('error');
+      console.warn('Gist sync failed:', e);
+    }
+  }
+
+  async function pullFromGist() {
+    try {
+      setSyncStatus('syncing');
+      const resp = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+        headers: { 'Authorization': `token ${GIST_TOKEN}` }
+      });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const data = await resp.json();
+      const content = data.files?.[GIST_FILE]?.content;
+      if (!content) { setSyncStatus('saved'); return false; }
+      const parsed = JSON.parse(content);
+      if (Object.keys(parsed).length === 0) { setSyncStatus('saved'); return false; }
+      // Write all keys to localStorage
+      Object.entries(parsed).forEach(([k, v]) => localStorage.setItem(k, v));
+      setSyncStatus('saved');
+      return true;
+    } catch(e) {
+      setSyncStatus('error');
+      console.warn('Gist pull failed:', e);
+      return false;
+    }
+  }
+
+  // Debounced save — waits 2s after last change before pushing to Gist
+  function scheduleSyncSave() {
+    if (!gistConfigured()) return;
+    clearTimeout(gistSaveTimer);
+    gistSaveTimer = setTimeout(pushToGist, 2000);
+  }
+
+  function saveState() {
+    try {
+      const todayTasks = serializeTasks('today-tasks');
+      const tmrwTasks = serializeTasks('tmrw-tasks');
+      const tmrwTimeBlocks = serializeTimeBlocks();
+      const tmrwNotes = document.querySelector('#tmrw-tasks').closest('.card').querySelector('textarea').value;
+      const todayNotes = document.querySelector('#today-tasks').closest('.card').querySelector('textarea').value;
+      localStorage.setItem('aos_today_tasks', JSON.stringify(todayTasks));
+      localStorage.setItem('aos_tmrw_tasks', JSON.stringify(tmrwTasks));
+      localStorage.setItem('aos_tmrw_blocks', JSON.stringify(tmrwTimeBlocks));
+      localStorage.setItem('aos_tmrw_notes', tmrwNotes);
+      localStorage.setItem('aos_today_notes', todayNotes);
+    } catch(e) {}
+    scheduleSyncSave();
+  }
+
+  function serializeTasks(containerId) {
+    const items = document.querySelectorAll(`#${containerId} .check-item`);
+    return Array.from(items).map(item => ({
+      text: item.querySelector('input')?.value || '',
+      done: item.classList.contains('done'),
+      dueText: item.querySelector('.due')?.textContent || ''
+    }));
+  }
+
+  function serializeTimeBlocks() {
+    const blocks = document.querySelectorAll('#tmrw-time-blocks .time-block');
+    return Array.from(blocks).map(b => ({
+      slot: b.querySelector('.time-slot')?.textContent || '',
+      task: b.querySelector('input')?.value || ''
+    }));
+  }
+
+  // ─── UNDO STACK ──────────────────────────────
+  const undoStack = [];
+  function pushUndo(action) {
+    undoStack.push(action);
+    if (undoStack.length > 50) undoStack.shift();
+  }
+
+  function undoLast() {
+    const action = undoStack.pop();
+    if (!action) { showToast('Nothing to undo'); return; }
+
+    if (action.type === 'check') {
+      restoreTaskToSection(action.taskName, action.sourceId, action.dueText);
+      removeSectionCompletedByName(action.completedListId, action.taskName);
+      updateCounts(); saveState();
+      showToast(`↩ Restored "${action.taskName}"`);
+
+    } else if (action.type === 'dual-complete') {
+      // Re-add lecture row back to lecture-list
+      const list = document.getElementById('lecture-list');
+      const row = document.createElement('div');
+      row.className = 'dual-row';
+      row.dataset.watched = action.watched;
+      row.dataset.amboss = action.amboss;
+      row.innerHTML = buildDualRowInner(action.taskName, action.watched === 'true', action.amboss === 'true');
+      list.appendChild(row);
+      removeSectionCompletedByName('lectures-completed-list', action.taskName);
+      updateCounts(); saveState();
+      showToast(`↩ Restored "${action.taskName}"`);
+
+    } else if (action.type === 'review-check') {
+      // Re-add review item
+      const list = document.getElementById('review-list');
+      const item = document.createElement('div');
+      item.className = 'review-item';
+      item.innerHTML = buildReviewItemInner(action.taskName, action.priority);
+      list.appendChild(item);
+      removeSectionCompletedByName('review-completed-list', action.taskName);
+      updateCounts(); saveState();
+      showToast(`↩ Restored "${action.taskName}"`);
+
+    } else if (action.type === 'wb-check') {
+      const list = document.getElementById('wb-list');
+      const item = document.createElement('div');
+      item.className = 'wb-item';
+      item.innerHTML = buildWbItemInner(action.taskName, action.tag, list.querySelectorAll('.wb-item').length + 1);
+      list.appendChild(item);
+      removeSectionCompletedByName('wb-completed-list', action.taskName);
+      updateCounts(); saveState();
+      showToast(`↩ Restored "${action.taskName}"`);
+
+    } else if (action.type === 'project-complete') {
+      // Find and remove from completed list, restore to active
+      const list = document.getElementById('projects-completed-list');
+      const rows = list?.querySelectorAll('.completed-project-row');
+      rows?.forEach(r => {
+        if ((r.querySelector('.completed-project-name')?.textContent || '').includes(action.title)) r.remove();
+      });
+      const activeList = document.getElementById('projects-list');
+      const tmp = document.createElement('div');
+      tmp.innerHTML = action.html;
+      const block = tmp.firstElementChild;
+      activeList.appendChild(block);
+      updateProjectProgress(block);
+      const count = document.getElementById('projects-completed-count');
+      if (count) count.textContent = list?.querySelectorAll('.completed-project-row').length || 0;
+      persistSectionCompleted('projects-completed-list');
+      updateCounts(); saveState();
+      showToast(`↩ "${action.title}" restored to active`);
+
+    } else if (action.type === 'add') {
+      const container = document.getElementById(action.sourceId);
+      if (container) {
+        const items = container.querySelectorAll(action.selector);
+        for (let i = items.length - 1; i >= 0; i--) {
+          const inp = items[i].querySelector('input');
+          if (inp?.value === action.taskName || (!inp?.value && action.taskName === '')) {
+            items[i].remove(); break;
+          }
+        }
+      }
+      updateCounts(); saveState();
+      showToast(`↩ Removed added item`);
+
+    } else if (action.type === 'clear') {
+      // Restore cleared items
+      const container = document.getElementById(action.containerId);
+      if (container) container.innerHTML = action.html;
+      updateCounts(); saveState();
+      showToast(`↩ Restored cleared items`);
+    }
+  }
+
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+      e.preventDefault(); undoLast();
+    }
+    if (e.shiftKey && e.key === 'R') performRollover();
+  });
+
+  // ─── SECTION COMPLETED DRAWERS ───────────────
+  // Generic toggle for any section's completed drawer
+  function toggleSectionCompleted(listId, chevronId) {
+    const list = document.getElementById(listId);
+    const chevron = document.getElementById(chevronId);
+    if (!list) return;
+    const open = list.style.display === 'none';
+    list.style.display = open ? '' : 'none';
+    if (chevron) chevron.style.transform = open ? 'rotate(90deg)' : '';
+  }
+
+  // The main global completed drawer (today/tmrw tasks)
+  function toggleCompleted() {
+    toggleSectionCompleted('completed-list', 'completed-chevron');
+  }
+
+  function makeSectionCompletedRow(taskName, timeStr, meta) {
+    const row = document.createElement('div');
+    row.className = 'completed-task-row';
+    row.dataset.meta = JSON.stringify(meta || {});
+    row.innerHTML = `
+      <div class="completed-uncheck" onclick="uncheckSectionTask(this)" title="Move back to list">↩</div>
+      <div class="completed-check-icon">✓</div>
+      <div class="completed-task-name">${taskName || 'Task'}</div>
+      <div class="completed-time">${timeStr}</div>`;
+    return row;
+  }
+
+  function getNowStr() {
+    const now = new Date();
+    const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${days[now.getDay()]} ${months[now.getMonth()]} ${now.getDate()}, ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+  }
+
+  function addToSectionCompleted(listId, countId, taskName, meta) {
+    const list = document.getElementById(listId);
+    const count = document.getElementById(countId);
+    if (!list) return;
+    list.insertBefore(makeSectionCompletedRow(taskName, getNowStr(), meta), list.firstChild);
+    if (count) count.textContent = list.querySelectorAll('.completed-task-row').length;
+    // Auto-open
+    if (list.style.display === 'none') {
+      list.style.display = '';
+      const chevronId = listId.replace('-list', '-chevron');
+      const chev = document.getElementById(chevronId);
+      if (chev) chev.style.transform = 'rotate(90deg)';
+    }
+    persistSectionCompleted(listId);
+  }
+
+  function removeSectionCompletedByName(listId, taskName) {
+    const list = document.getElementById(listId);
+    if (!list) return;
+    const rows = list.querySelectorAll('.completed-task-row');
+    for (let r of rows) {
+      if (r.querySelector('.completed-task-name')?.textContent === taskName) { r.remove(); break; }
+    }
+    const countId = listId.replace('-list', '-count');
+    const count = document.getElementById(countId);
+    if (count) count.textContent = list.querySelectorAll('.completed-task-row').length;
+    persistSectionCompleted(listId);
+  }
+
+  function uncheckSectionTask(btn) {
+    const row = btn.closest('.completed-task-row');
+    const taskName = row.querySelector('.completed-task-name')?.textContent || '';
+    const meta = JSON.parse(row.dataset.meta || '{}');
+    const listId = row.closest('.completed-list')?.id || 'completed-list';
+    row.remove();
+
+    // Restore to appropriate section
+    if (listId === 'completed-list') {
+      restoreTaskToSection(taskName, meta.sourceId || 'today-tasks', meta.dueText || '');
+    } else if (listId === 'lectures-completed-list') {
+      const list = document.getElementById('lecture-list');
+      const r = document.createElement('div');
+      r.className = 'dual-row';
+      r.dataset.watched = 'false'; r.dataset.amboss = 'false';
+      r.innerHTML = buildDualRowInner(taskName, false, false);
+      list.appendChild(r);
+    } else if (listId === 'review-completed-list') {
+      const list = document.getElementById('review-list');
+      const item = document.createElement('div');
+      item.className = 'review-item';
+      item.innerHTML = buildReviewItemInner(taskName, meta.priority || 'Med');
+      list.appendChild(item);
+    } else if (listId === 'wb-completed-list') {
+      const list = document.getElementById('wb-list');
+      const item = document.createElement('div');
+      item.className = 'wb-item';
+      item.innerHTML = buildWbItemInner(taskName, meta.tag || '—', list.querySelectorAll('.wb-item').length + 1);
+      list.appendChild(item);
+    } else if (listId === 'projects-completed-list') {
+      // Restore as standalone task row in projects list — simplest approach
+      restoreTaskToSection(taskName, 'today-tasks', '');
+    }
+
+    const countId = listId.replace('-list', '-count');
+    const count = document.getElementById(countId);
+    if (count) count.textContent = document.getElementById(listId)?.querySelectorAll('.completed-task-row').length || 0;
+    persistSectionCompleted(listId);
+    updateCounts(); saveState();
+    showToast(`↩ Restored "${taskName}"`);
+  }
+
+  function persistSectionCompleted(listId) {
+    try {
+      const list = document.getElementById(listId);
+      if (!list) return;
+      let data;
+      if (listId === 'projects-completed-list') {
+        data = Array.from(list.querySelectorAll('.completed-project-row')).map(r => ({
+          html: r.dataset.html || '',
+          name: r.querySelector('.completed-project-name')?.textContent || '',
+          time: r.querySelector('.completed-project-time')?.textContent || ''
+        }));
+      } else {
+        data = Array.from(list.querySelectorAll('.completed-task-row')).map(r => ({
+          name: r.querySelector('.completed-task-name')?.textContent || '',
+          time: r.querySelector('.completed-time')?.textContent || '',
+          meta: r.dataset.meta || '{}'
+        }));
+      }
+      localStorage.setItem('aos_' + listId, JSON.stringify(data));
+      scheduleSyncSave();
+    } catch(e) {}
+  }
+
+  function restoreSectionCompleted(listId, countId) {
+    try {
+      const data = JSON.parse(localStorage.getItem('aos_' + listId) || '[]');
+      const list = document.getElementById(listId);
+      const count = document.getElementById(countId);
+      if (!list) return;
+      list.innerHTML = '';
+
+      if (listId === 'projects-completed-list') {
+        data.forEach(item => {
+          const row = document.createElement('div');
+          row.className = 'completed-project-row';
+          row.dataset.html = item.html || '';
+          const nameText = item.name || 'Project';
+          row.innerHTML = `
+            <div class="completed-check-icon">✓</div>
+            <div class="completed-project-name">${nameText}</div>
+            <div class="completed-project-time">${item.time || ''}</div>
+            <button class="uncomplete-project-btn" onclick="uncompleteProject(this)">↩ Reopen</button>`;
+          list.appendChild(row);
+        });
+      } else {
+        data.forEach(item => {
+          list.appendChild(makeSectionCompletedRow(item.name, item.time, JSON.parse(item.meta || '{}')));
+        });
+      }
+
+      if (count) count.textContent = data.length;
+      if (data.length > 0) {
+        list.style.display = '';
+        const chev = document.getElementById(listId.replace('-list','-chevron'));
+        if (chev) chev.style.transform = 'rotate(90deg)';
+      }
+    } catch(e) {}
+  }
+
+  // ─── CLEAR SECTION ───────────────────────────
+  function clearSection(containerId, itemSelector, sectionName) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const items = container.querySelectorAll('.' + itemSelector);
+    if (items.length === 0) return;
+    if (!confirm(`Clear all items in ${sectionName}? This can be undone with Ctrl+Z.`)) return;
+    pushUndo({ type: 'clear', containerId, html: container.innerHTML });
+    container.innerHTML = '';
+    updateCounts(); saveState();
+    showToast(`Cleared ${sectionName}`);
+  }
+
+  // ─── HELPER BUILDERS (for undo restore) ──────
+  function buildDualRowInner(name, watched, amboss) {
+    return `
+      <div class="dual-label"><input class="inline-input" value="${name.replace(/"/g,'&quot;')}"></div>
+      <div class="check-col">
+        <span class="check-col-label">watched</span>
+        <div class="checkbox ${watched?'checked':''}" onclick="toggleDual(this,'watched')"></div>
+      </div>
+      <div class="check-col">
+        <span class="check-col-label">amboss</span>
+        <div class="checkbox ${amboss?'checked':''}" onclick="toggleDual(this,'amboss')"></div>
+      </div>`;
+  }
+
+  function buildReviewItemInner(name, priority) {
+    const states = {
+      'High': {bg:'var(--red-soft)',color:'var(--red)',border:'rgba(248,113,113,0.2)'},
+      'Med':  {bg:'var(--amber-soft)',color:'var(--amber)',border:'rgba(251,191,36,0.2)'},
+      'Low':  {bg:'var(--green-soft)',color:'var(--green)',border:'rgba(52,211,153,0.2)'}
+    };
+    const s = states[priority] || states['Med'];
+    return `
+      <span class="review-pill" style="background:${s.bg};color:${s.color};border:1px solid ${s.border};cursor:pointer" onclick="cyclePriority(this)">${priority}</span>
+      <div class="review-name"><input class="inline-input" value="${name.replace(/"/g,'&quot;')}"></div>
+      <div class="review-check-col"><div class="checkbox" onclick="toggleReviewDone(this)"></div></div>`;
+  }
+
+  function buildWbItemInner(name, tag, num) {
+    const tagStates = {
+      '—':       {bg:'var(--surface3)',color:'var(--text-muted)'},
+      'Concept':  {bg:'var(--accent-soft)',color:'var(--accent)'},
+      'Clinical': {bg:'var(--green-soft)',color:'var(--green)'},
+      'Research': {bg:'var(--amber-soft)',color:'var(--amber)'}
+    };
+    const t = tagStates[tag] || tagStates['—'];
+    return `
+      <div class="wb-num" style="cursor:pointer;user-select:none;" onclick="markWbDone(this)" title="Click to mark done">${String(num).padStart(2,'0')}</div>
+      <div class="wb-text"><input class="inline-input" value="${name.replace(/"/g,'&quot;')}" placeholder="New session..."></div>
+      <span class="wb-tag" style="background:${t.bg};color:${t.color};cursor:pointer" onclick="cycleWbTag(this)">${tag}</span>`;
+  }
+
+  // ─── TOAST ────────────────────────────────────
+  function showToast(msg) {
+    const t = document.getElementById('rollover-toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 4000);
+  }
+
+  // ─── 4AM PST ROLLOVER ────────────────────────
+  // Fires once per day after 4am PST.
+  // Uses aos_last_rollover_date — only written by performRollover, never by saveState.
+  // On very first ever load, seeds the date so future days work correctly.
+  function checkRollover() {
+    const lastRollover = localStorage.getItem('aos_last_rollover_date');
+    const todayDate = getPSTDateString();
+    const pstHour = getPSTHour();
+
+    // First ever load — seed the date and do nothing else
+    if (!lastRollover) {
+      localStorage.setItem('aos_last_rollover_date', todayDate);
+      return;
+    }
+
+    // It's a new PST day and past 4am — fire rollover
+    if (lastRollover !== todayDate && pstHour >= 4) {
+      performRollover();
+    }
+  }
+
+  function performRollover() {
+    // ── STEP 1: Mark all remaining Today tasks as Overdue
+    // (completed tasks are already gone from the list — they're in the drawer)
+    document.querySelectorAll('#today-tasks .check-item').forEach(item => {
+      const meta = item.querySelector('.check-meta');
+      if (meta) meta.innerHTML = '<span class="due overdue">Overdue</span>';
+    });
+
+    // ── STEP 2: Move all remaining Tomorrow tasks → Today
+    // (completed tomorrow tasks are already gone from the list too)
+    const tmrwItems = document.querySelectorAll('#tmrw-tasks .check-item');
+    const todayContainer = document.getElementById('today-tasks');
+
+    tmrwItems.forEach(item => {
+      const val = item.querySelector('input')?.value?.trim();
+      if (!val) return; // skip empty placeholder rows
+      const clone = document.createElement('div');
+      clone.className = 'check-item';
+      clone.dataset.done = 'false';
+      clone.innerHTML = `
+        <div class="checkbox" onclick="toggleCheck(this)"></div>
+        <div class="check-label"><input class="inline-input" value="${val.replace(/"/g,'&quot;')}"></div>
+        <div class="check-meta"><span class="due ok">Today</span></div>`;
+      todayContainer.appendChild(clone);
+    });
+
+    // ── STEP 3: Carry Tomorrow notes into Today notes
+    const tmrwCard = document.querySelector('#tmrw-tasks').closest('.card');
+    const tmrwNotes = tmrwCard.querySelector('textarea').value.trim();
+    const todayNotes = document.querySelector('#today-tasks').closest('.card').querySelector('textarea');
+    if (tmrwNotes) {
+      todayNotes.value = todayNotes.value.trim()
+        ? todayNotes.value.trim() + '\n\n─── From Tomorrow ───\n' + tmrwNotes
+        : tmrwNotes;
+    }
+
+    // ── STEP 4: Clear Tomorrow entirely (tasks, time blocks, notes)
+    document.getElementById('tmrw-tasks').innerHTML = `
+      <div class="check-item" data-done="false">
+        <div class="checkbox" onclick="toggleCheck(this)"></div>
+        <div class="check-label"><input class="inline-input" placeholder="Add a task..."></div>
+        <div class="check-meta"></div>
+      </div>`;
+
+    document.querySelectorAll('#tmrw-time-blocks .time-block input').forEach(inp => { inp.value = ''; });
+    tmrwCard.querySelector('textarea').value = '';
+
+    // ── STEP 5: Completed log is preserved forever — never touched here
+
+    // Mark today's date as rolled over so it won't fire again until tomorrow
+    localStorage.setItem('aos_last_rollover_date', getPSTDateString());
+
+    saveState();
+    updateCounts();
+    showToast("🌅 Good morning — tomorrow's plan has rolled over to today.");
+  }
+
+
+
+  // ─── CALENDAR STRIP ──────────────────────────
+  function buildCalStrip() {
+    const strip = document.getElementById('cal-strip');
+    const today = new Date();
+    const days = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+    for (let i = -3; i <= 10; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      const el = document.createElement('div');
+      el.className = 'cal-day' + (i === 0 ? ' today' : '') + (Math.random() > 0.6 ? ' has-event' : '');
+      el.innerHTML = `<div class="cal-weekday">${days[d.getDay()]}</div><div class="cal-num">${d.getDate()}</div>`;
+      strip.appendChild(el);
+    }
+  }
+  buildCalStrip();
+
+  // ─── NAV ACTIVE ───────────────────────────────
+  function setActive(el) {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  // ─── CHECKBOX TOGGLE ─────────────────────────
+  function toggleCheck(cb) {
+    const checked = !cb.classList.contains('checked');
+    cb.classList.toggle('checked', checked);
+    const item = cb.closest('.check-item, .task-row');
+    if (item) item.classList.toggle('done', checked);
+
+    const taskName = item?.querySelector('input')?.value?.trim() || item?.querySelector('.task-name')?.textContent?.trim() || 'Task';
+    const dueText = item?.querySelector('.due')?.textContent || '';
+
+    const isWeekly  = !!item?.closest('#weekly-tasks');
+    const isTmrw    = !!item?.closest('#tmrw-tasks');
+    const sourceId  = isWeekly  ? 'weekly-tasks'
+                    : isTmrw   ? 'tmrw-tasks'
+                    : 'today-tasks';
+    const listId    = isWeekly  ? 'weekly-completed-list'  : 'completed-list';
+    const countId   = isWeekly  ? 'weekly-completed-count' : 'completed-count';
+
+    if (checked) {
+      pushUndo({ type: 'check', taskName, sourceId, dueText, completedListId: listId });
+      addToSectionCompleted(listId, countId, taskName, { sourceId, dueText });
+      recordStatEvent('task_complete');
+      if (item) setTimeout(() => { item.remove(); updateCounts(); saveState(); }, 300);
+    } else {
+      removeSectionCompletedByName(listId, taskName);
+      updateCounts(); saveState();
+    }
+  }
+
+  function restoreTaskToSection(taskName, sourceId, dueText) {
+    const container = document.getElementById(sourceId);
+    if (!container) return;
+    const item = document.createElement('div');
+    item.className = 'check-item';
+    item.dataset.done = 'false';
+    const isToday = sourceId === 'today-tasks';
+    const dueHtml = dueText ? `<span class="due ok">${dueText}</span>` : '';
+    const moveBtn = isToday ? `<span class="task-action-btn" onclick="moveToTomorrow(this)" title="Move to tomorrow">→</span>` : '';
+    item.innerHTML = `
+      <div class="drag-handle">⠿</div>
+      <div class="checkbox" onclick="toggleCheck(this)"></div>
+      <div class="check-label"><input class="inline-input" value="${taskName.replace(/"/g,'&quot;')}"></div>
+      <div class="check-meta">${dueHtml}<span class="task-actions">${moveBtn}<span class="task-action-btn remove" onclick="removeTask(this)" title="Remove">×</span></span></div>`;
+    container.appendChild(item);
+    initDragItem(item);
+  }
+
+  // Alias for restore of global completed list
+  function restoreCompleted() {
+    restoreSectionCompleted('completed-list', 'completed-count');
+    restoreSectionCompleted('weekly-completed-list', 'weekly-completed-count');
+    restoreSectionCompleted('projects-completed-list', 'projects-completed-count');
+    restoreSectionCompleted('wb-completed-list', 'wb-completed-count');
+    restoreSectionCompleted('lectures-completed-list', 'lectures-completed-count');
+    restoreSectionCompleted('review-completed-list', 'review-completed-count');
+  }
+
+  // ─── DUAL CHECKBOX (lectures) ─────────────────
+  // When both watched + amboss are checked, row moves to completed drawer
+  function toggleDual(cb, type) {
+    const checked = !cb.classList.contains('checked');
+    cb.classList.toggle('checked', checked);
+    const row = cb.closest('.dual-row');
+    row.dataset[type] = String(checked);
+    const allDone = row.dataset.watched === 'true' && row.dataset.amboss === 'true';
+    row.classList.toggle('fully-done', allDone);
+
+    if (allDone) {
+      const name = row.querySelector('input')?.value?.trim() || 'Lecture';
+      pushUndo({ type: 'dual-complete', taskName: name, watched: row.dataset.watched, amboss: row.dataset.amboss });
+      addToSectionCompleted('lectures-completed-list', 'lectures-completed-count', name, { watched: 'true', amboss: 'true' });
+      setTimeout(() => { row.remove(); updateCounts(); saveState(); }, 300);
+    } else {
+      updateCounts(); saveState();
+    }
+  }
+
+  // ─── REVIEW ITEM DONE ────────────────────────
+  function toggleReviewDone(cb) {
+    const checked = !cb.classList.contains('checked');
+    cb.classList.toggle('checked', checked);
+    const item = cb.closest('.review-item');
+    if (!checked) return;
+    const name = item?.querySelector('input')?.value?.trim() || 'Review item';
+    const priority = item?.querySelector('.review-pill')?.textContent || 'Med';
+    pushUndo({ type: 'review-check', taskName: name, priority });
+    addToSectionCompleted('review-completed-list', 'review-completed-count', name, { priority });
+    setTimeout(() => { item.remove(); updateCounts(); saveState(); }, 300);
+  }
+
+  // ─── WHITEBOARD ITEM DONE ───────────────────
+  // Add a checkbox to wb items via click on the num
+  function markWbDone(btn) {
+    const item = btn.closest('.wb-item');
+    const name = item?.querySelector('input')?.value?.trim() || 'Session';
+    const tag = item?.querySelector('.wb-tag')?.textContent || '—';
+    pushUndo({ type: 'wb-check', taskName: name, tag });
+    addToSectionCompleted('wb-completed-list', 'wb-completed-count', name, { tag });
+    setTimeout(() => { item.remove(); updateCounts(); saveState(); }, 300);
+  }
+
+  // ─── PROJECT TASK TOGGLE (stays in place, updates progress) ──
+  function toggleProjectTask(cb) {
+    const checked = !cb.classList.contains('checked');
+    cb.classList.toggle('checked', checked);
+    const row = cb.closest('.task-row');
+    if (row) row.classList.toggle('done', checked);
+    updateProjectProgress(cb.closest('.project-block'));
+    saveState();
+  }
+
+  function updateProjectProgress(block) {
+    if (!block) return;
+    const rows = block.querySelectorAll('.project-tasks .task-row');
+    const done = block.querySelectorAll('.project-tasks .task-row.done');
+    const total = rows.length;
+    const pct = total > 0 ? Math.round((done.length / total) * 100) : 0;
+    const bar = block.querySelector('.progress-bar');
+    const prog = block.querySelector('.project-progress');
+    if (bar) bar.style.width = pct + '%';
+    if (prog) prog.textContent = `${done.length}/${total}`;
+
+    // Show/hide complete button
+    const completeBtn = block.querySelector('.complete-project-btn');
+    if (completeBtn) completeBtn.style.display = (total > 0 && done.length === total) ? '' : 'none';
+  }
+
+  // ─── COMPLETE WHOLE PROJECT ──────────────────
+  function completeProject(btn) {
+    const block = btn.closest('.project-block');
+    const title = block.querySelector('.proj-title-text')?.textContent?.trim() || 'Project';
+    const due = block.querySelector('.proj-due-val')?.textContent?.trim() || '—';
+    const html = block.outerHTML;
+
+    pushUndo({ type: 'project-complete', html, title });
+
+    // Add to completed projects drawer
+    const list = document.getElementById('projects-completed-list');
+    const count = document.getElementById('projects-completed-count');
+    const row = document.createElement('div');
+    row.className = 'completed-project-row';
+    row.dataset.html = html;
+    row.innerHTML = `
+      <div class="completed-check-icon">✓</div>
+      <div class="completed-project-name">${title}<span style="font-size:10px;color:var(--text-dim);margin-left:8px;">Due ${due}</span></div>
+      <div class="completed-project-time">${getNowStr()}</div>
+      <button class="uncomplete-project-btn" onclick="uncompleteProject(this)">↩ Reopen</button>`;
+    list.insertBefore(row, list.firstChild);
+    if (count) count.textContent = list.querySelectorAll('.completed-project-row').length;
+    if (list.style.display === 'none') {
+      list.style.display = '';
+      const chev = document.getElementById('projects-completed-chevron');
+      if (chev) chev.style.transform = 'rotate(90deg)';
+    }
+
+    block.remove();
+    persistSectionCompleted('projects-completed-list');
+    recordStatEvent('project_complete');
+    updateCounts(); saveState();
+    showToast(`✓ "${title}" marked complete`);
+  }
+
+  function uncompleteProject(btn) {
+    const row = btn.closest('.completed-project-row');
+    const html = row.dataset.html;
+    const title = row.querySelector('.completed-project-name')?.textContent?.trim() || 'Project';
+    row.remove();
+
+    const list = document.getElementById('projects-list');
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    const block = tmp.firstElementChild;
+    list.appendChild(block);
+    updateProjectProgress(block);
+
+    const count = document.getElementById('projects-completed-count');
+    if (count) count.textContent = document.getElementById('projects-completed-list')?.querySelectorAll('.completed-project-row').length || 0;
+    persistSectionCompleted('projects-completed-list');
+    updateCounts(); saveState();
+    showToast(`↩ "${title}" reopened`);
+  }
+
+  // ─── EDIT PROJECT DUE DATE ───────────────────
+  function editProjectDue(label) {
+    const valSpan = label.querySelector('.proj-due-val');
+    if (!valSpan) return;
+    const current = valSpan.textContent;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = current;
+    input.className = 'inline-input';
+    input.style.cssText = 'width:70px;font-size:12px;';
+    input.placeholder = 'e.g. Apr 15';
+    label.replaceChild(input, valSpan);
+    input.focus(); input.select();
+    function save() {
+      const newVal = input.value.trim() || '—';
+      valSpan.textContent = newVal;
+      label.replaceChild(valSpan, input);
+      saveState();
+    }
+    input.addEventListener('blur', save);
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); save(); } });
+  }
+
+  // ─── ADD MILESTONE ───────────────────────────
+  function addMilestone(btn) {
+    const block = btn.closest('.project-block');
+    const tasks = block.querySelector('.project-tasks');
+    const row = document.createElement('div');
+    row.className = 'task-row';
+    row.innerHTML = `
+      <div class="task-indent"></div>
+      <div class="checkbox" onclick="toggleProjectTask(this)"></div>
+      <div class="task-name"><input class="inline-input" placeholder="New milestone..."></div>`;
+    tasks.appendChild(row);
+    row.querySelector('input').focus();
+    updateProjectProgress(block);
+    saveState();
+  }
+
+  // ─── REMOVE SINGLE LECTURE ───────────────────
+  function removeLecture(btn) {
+    const row = btn.closest('.dual-row');
+    if (!row) return;
+    const name = row.querySelector('input')?.value || '';
+    pushUndo({ type: 'clear', containerId: null, html: null, _removeRow: row.outerHTML, _parentId: 'lecture-list' });
+    row.remove();
+    updateCounts(); saveState();
+  }
+
+  // ─── ADD PROJECT ─────────────────────────────
+  function addProject() {
+    const list = document.getElementById('projects-list');
+    const block = document.createElement('div');
+    block.className = 'project-block';
+    block.innerHTML = `
+      <div class="project-header" onclick="toggleProject(this)">
+        <span class="project-name">
+          <button class="collapse-btn open" onclick="event.stopPropagation()">▶</button>
+          <span class="proj-title-text"><input class="inline-input" placeholder="Project title..." style="font-weight:500" onclick="event.stopPropagation()"></span>
+        </span>
+        <div style="display:flex;align-items:center;gap:10px;" onclick="event.stopPropagation()">
+          <div class="progress-bar-wrap"><div class="progress-bar" style="width:0%"></div></div>
+          <span class="project-progress">0/0</span>
+          <span class="proj-due-label" onclick="editProjectDue(this)" title="Click to edit due date" style="cursor:pointer;">
+            <span style="font-size:9px;color:var(--text-dim);font-family:'Geist Mono',monospace;display:block;text-transform:uppercase;letter-spacing:.5px;">Due</span>
+            <span class="due ok proj-due-val">—</span>
+          </span>
+        </div>
+      </div>
+      <div class="project-tasks">
+        <div class="task-row">
+          <div class="task-indent"></div>
+          <div class="checkbox" onclick="toggleProjectTask(this)"></div>
+          <div class="task-name"><input class="inline-input" placeholder="Add first milestone..."></div>
+        </div>
+      </div>
+      <div class="project-footer">
+        <button class="add-btn" onclick="addMilestone(this)">+ Add milestone</button>
+        <button class="complete-project-btn" onclick="completeProject(this)" style="display:none;">✓ Mark Project Complete</button>
+      </div>`;
+    list.appendChild(block);
+    block.querySelector('input').focus();
+    updateCounts();
+  }
+
+  // ─── WHITEBOARD DONE (now uses checkbox) ─────
+  function markWbDone(cb) {
+    const item = cb.closest('.wb-item');
+    const name = item?.querySelector('input')?.value?.trim() || 'Session';
+    const tag = item?.querySelector('.wb-tag')?.textContent || '—';
+    cb.classList.add('checked');
+    pushUndo({ type: 'wb-check', taskName: name, tag });
+    addToSectionCompleted('wb-completed-list', 'wb-completed-count', name, { tag });
+    setTimeout(() => { item.remove(); saveState(); }, 300);
+  }
+
+  function buildWbItemInner(name, tag, _num) {
+    const tagStates = {
+      '—':       {bg:'var(--surface3)',color:'var(--text-muted)'},
+      'Concept':  {bg:'var(--accent-soft)',color:'var(--accent)'},
+      'Clinical': {bg:'var(--green-soft)',color:'var(--green)'},
+      'Research': {bg:'var(--amber-soft)',color:'var(--amber)'}
+    };
+    const t = tagStates[tag] || tagStates['—'];
+    return `
+      <div class="checkbox" onclick="markWbDone(this)"></div>
+      <div class="wb-text"><input class="inline-input" value="${name.replace(/"/g,'&quot;')}" placeholder="New session..."></div>
+      <span class="wb-tag" style="background:${t.bg};color:${t.color};cursor:pointer" onclick="cycleWbTag(this)">${tag}</span>`;
+  }
+
+  // ─── ADD LECTURE (with remove button) ────────
+  function addLecture() {
+    const list = document.getElementById('lecture-list');
+    const row = document.createElement('div');
+    row.className = 'dual-row';
+    row.dataset.watched = 'false';
+    row.dataset.amboss = 'false';
+    row.innerHTML = buildDualRowInner('', false, false);
+    list.appendChild(row);
+    row.querySelector('input').focus();
+    updateCounts();
+  }
+
+  function buildDualRowInner(name, watched, amboss) {
+    return `
+      <div class="lec-remove" onclick="removeLecture(this)">−</div>
+      <div class="dual-label"><input class="inline-input" value="${name.replace(/"/g,'&quot;')}" placeholder="Lecture name..."></div>
+      <div class="check-col"><span class="check-col-label">watched</span><div class="checkbox ${watched?'checked':''}" onclick="toggleDual(this,'watched')"></div></div>
+      <div class="check-col"><span class="check-col-label">amboss</span><div class="checkbox ${amboss?'checked':''}" onclick="toggleDual(this,'amboss')"></div></div>`;
+  }
+
+  // ─── PROJECT COLLAPSE ────────────────────────
+  function toggleProject(header) {
+    const block = header.closest('.project-block');
+    const tasks = block.querySelector('.project-tasks');
+    const footer = block.querySelector('.project-footer');
+    const btn = header.querySelector('.collapse-btn');
+    const visible = tasks.style.display !== 'none';
+    tasks.style.display = visible ? 'none' : '';
+    if (footer) footer.style.display = visible ? 'none' : '';
+    btn.classList.toggle('open', !visible);
+  }
+
+  // ─── ADD ITEMS ────────────────────────────────
+  function addCheckItem(containerId) {
+    const container = document.getElementById(containerId);
+    const isToday = containerId === 'today-tasks';
+    const moveBtn = isToday ? `<span class="task-action-btn" onclick="moveToTomorrow(this)" title="Move to tomorrow">→</span>` : '';
+    const item = document.createElement('div');
+    item.className = 'check-item';
+    item.dataset.done = 'false';
+    item.innerHTML = `
+      <div class="drag-handle">⠿</div>
+      <div class="checkbox" onclick="toggleCheck(this)"></div>
+      <div class="check-label"><input class="inline-input" placeholder="New task..."></div>
+      <div class="check-meta"><span class="task-actions">${moveBtn}<span class="task-action-btn remove" onclick="removeTask(this)" title="Remove">×</span></span></div>`;
+    container.appendChild(item);
+    item.querySelector('input').focus();
+    initDragItem(item);
+    updateCounts();
+  }
+
+  function addTmrwTask() {
+    const container = document.querySelector('.tmrw-highlight').parentElement;
+    const item = document.createElement('div');
+    item.className = 'check-item tmrw-highlight';
+    item.style.cssText = 'border-left:2px solid var(--blue);padding-left:12px;border-radius:2px;';
+    item.dataset.done = 'false';
+    item.innerHTML = `
+      <div class="checkbox" onclick="toggleCheck(this)"></div>
+      <div class="check-label"><input class="inline-input" placeholder="Tomorrow task..."></div>
+      <div class="check-meta"><span class="due ok">Tmrw</span></div>`;
+    container.insertBefore(item, container.querySelector('.note-area').previousElementSibling.nextElementSibling);
+    item.querySelector('input').focus();
+  }
+
+  function addReviewItem() {
+    const list = document.getElementById('review-list');
+    const item = document.createElement('div');
+    item.className = 'review-item';
+    item.innerHTML = buildReviewItemInner('', 'Med');
+    list.appendChild(item);
+    item.querySelector('input').focus();
+    updateCounts();
+  }
+
+  function cyclePriority(pill) {
+    const states = [{label:'High',bg:'var(--red-soft)',color:'var(--red)',border:'rgba(248,113,113,0.2)'},
+                    {label:'Med',bg:'var(--amber-soft)',color:'var(--amber)',border:'rgba(251,191,36,0.2)'},
+                    {label:'Low',bg:'var(--green-soft)',color:'var(--green)',border:'rgba(52,211,153,0.2)'}];
+    const cur = states.findIndex(s => s.label === pill.textContent);
+    const next = states[(cur+1)%3];
+    pill.textContent = next.label;
+    pill.style.background = next.bg;
+    pill.style.color = next.color;
+    pill.style.borderColor = next.border;
+  }
+
+  function addWbItem() {
+    const list = document.getElementById('wb-list');
+    const num = list.querySelectorAll('.wb-item').length + 1;
+    const item = document.createElement('div');
+    item.className = 'wb-item';
+    item.innerHTML = buildWbItemInner('', '—', num);
+    list.appendChild(item);
+    item.querySelector('input').focus();
+  }
+
+  function cycleWbTag(tag) {
+    const states = [
+      {label:'—',bg:'var(--surface3)',color:'var(--text-muted)'},
+      {label:'Concept',bg:'var(--accent-soft)',color:'var(--accent)'},
+      {label:'Clinical',bg:'var(--green-soft)',color:'var(--green)'},
+      {label:'Research',bg:'var(--amber-soft)',color:'var(--amber)'}
+    ];
+    const cur = states.findIndex(s => s.label === tag.textContent);
+    const next = states[(cur+1)%states.length];
+    tag.textContent = next.label;
+    tag.style.background = next.bg;
+    tag.style.color = next.color;
+  }
+
+  function addProject() {
+    const list = document.getElementById('projects-list');
+    const block = document.createElement('div');
+    block.className = 'project-block';
+    block.innerHTML = `
+      <div class="project-header" onclick="toggleProject(this)">
+        <span class="project-name">
+          <button class="collapse-btn open">▶</button>
+          <input class="inline-input" placeholder="Project title..." style="font-weight:500">
+        </span>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="progress-bar-wrap"><div class="progress-bar" style="width:0%"></div></div>
+          <span class="project-progress">0/0</span>
+          <span class="due ok">—</span>
+        </div>
+      </div>
+      <div class="project-tasks">
+        <div class="task-row">
+          <div class="task-indent"></div>
+          <div class="checkbox" onclick="toggleCheck(this)"></div>
+          <div class="task-name"><input class="inline-input" placeholder="Add milestone..."></div>
+          <span class="due ok">—</span>
+        </div>
+      </div>`;
+    list.appendChild(block);
+    block.querySelector('input').focus();
+  }
+
+  // ─── COUNTS ───────────────────────────────────
+  function updateCounts() {
+    const todayItems = document.querySelectorAll('#today-tasks .check-item');
+    const todayDone = document.querySelectorAll('#today-tasks .check-item.done');
+    document.getElementById('today-count').textContent =
+      `${todayItems.length - todayDone.length} tasks`;
+
+    const tmrwItems = document.querySelectorAll('#tmrw-tasks .check-item');
+    const tmrwDone = document.querySelectorAll('#tmrw-tasks .check-item.done');
+    document.getElementById('tmrw-count').textContent =
+      `${tmrwItems.length - tmrwDone.length} tasks`;
+
+    const weeklyItems = document.querySelectorAll('#weekly-tasks .check-item');
+    const weeklyDone = document.querySelectorAll('#weekly-tasks .check-item.done');
+    document.getElementById('weekly-count').textContent =
+      `${weeklyItems.length - weeklyDone.length} remaining`;
+
+    const lecturesPending = document.querySelectorAll('#lecture-list .dual-row:not(.fully-done)').length;
+    const reviewItems = document.querySelectorAll('#review-list .review-item').length;
+    const projectsActive = document.querySelectorAll('#projects-list .project-block').length;
+
+    document.getElementById('stat-tasks').textContent = todayItems.length - todayDone.length;
+    document.getElementById('stat-lectures').textContent = lecturesPending;
+    document.getElementById('stat-projects').textContent = projectsActive;
+    document.getElementById('stat-review').textContent = reviewItems;
+  }
+  // ─── INIT ────────────────────────────────────
+  (async () => {
+    if (!gistConfigured()) {
+      showSetupScreen();
+      return;
+    }
+    await pullFromGist();
+    updateCounts();
+    document.querySelectorAll('.project-block').forEach(updateProjectProgress);
+    restoreCompleted();
+    initAllDrag();
+    checkRollover();
+    setInterval(() => { checkRollover(); saveState(); }, 60 * 1000);
+    setInterval(pushToGist, 5 * 60 * 1000);
+  })();
+
+  // ─── REMOVE SINGLE TASK ──────────────────────
+  function removeTask(btn) {
+    const item = btn.closest('.check-item');
+    if (!item) return;
+    const name = item.querySelector('input')?.value || '';
+    const sourceId = item.closest('#today-tasks') ? 'today-tasks'
+                   : item.closest('#tmrw-tasks')  ? 'tmrw-tasks'
+                   : item.closest('#weekly-tasks') ? 'weekly-tasks'
+                   : 'today-tasks';
+    pushUndo({ type: 'clear', containerId: null, _removeRow: item.outerHTML, _parentId: sourceId });
+    item.style.opacity = '0';
+    item.style.transform = 'translateX(8px)';
+    item.style.transition = 'all 0.2s';
+    setTimeout(() => { item.remove(); updateCounts(); saveState(); }, 200);
+  }
+
+  // ─── MOVE TO TOMORROW ────────────────────────
+  function moveToTomorrow(btn) {
+    const item = btn.closest('.check-item');
+    if (!item) return;
+    const name = item.querySelector('input')?.value?.trim() || '';
+    item.style.opacity = '0'; item.style.transition = 'opacity 0.2s';
+    setTimeout(() => {
+      item.remove();
+      const tmrw = document.getElementById('tmrw-tasks');
+      const newItem = document.createElement('div');
+      newItem.className = 'check-item';
+      newItem.dataset.done = 'false';
+      newItem.innerHTML = `
+        <div class="drag-handle">⠿</div>
+        <div class="checkbox" onclick="toggleCheck(this)"></div>
+        <div class="check-label"><input class="inline-input" value="${name.replace(/"/g,'&quot;')}"></div>
+        <div class="check-meta"><span class="due ok">Tmrw</span><span class="task-actions"><span class="task-action-btn remove" onclick="removeTask(this)" title="Remove">×</span></span></div>`;
+      tmrw.appendChild(newItem);
+      initDragItem(newItem);
+      updateCounts(); saveState();
+      showToast(`→ Moved "${name}" to tomorrow`);
+    }, 200);
+  }
+
+  // ─── TIME BLOCKS ─────────────────────────────
+  function addTimeBlock(containerId) {
+    const container = document.getElementById(containerId);
+    const block = document.createElement('div');
+    block.className = 'time-block';
+    block.innerHTML = `
+      <div class="time-slot"><input class="inline-input" value="" placeholder="00:00" style="width:44px;font-family:'Geist Mono',monospace;font-size:11px;color:var(--text-muted)"></div>
+      <div class="time-content"><div class="time-task"><input class="inline-input" placeholder="What's happening..."></div></div>
+      <div class="block-remove" onclick="removeTimeBlock(this)">−</div>`;
+    container.appendChild(block);
+    block.querySelector('.time-slot input').focus();
+    saveState();
+  }
+
+  function removeTimeBlock(btn) {
+    const block = btn.closest('.time-block');
+    if (!block) return;
+    block.style.opacity = '0'; block.style.transition = 'opacity 0.2s';
+    setTimeout(() => { block.remove(); saveState(); }, 200);
+  }
+
+  // ─── DRAG TO REORDER ─────────────────────────
+  let dragSrc = null;
+
+  function initDragItem(item) {
+    item.setAttribute('draggable', 'true');
+    item.addEventListener('dragstart', e => {
+      dragSrc = item;
+      item.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    item.addEventListener('dragend', () => {
+      dragSrc = null;
+      item.classList.remove('dragging');
+      document.querySelectorAll('.check-item.drag-over').forEach(el => el.classList.remove('drag-over'));
+      saveState();
+    });
+    item.addEventListener('dragover', e => {
+      if (!dragSrc || dragSrc === item) return;
+      // Only allow reorder within same container
+      if (dragSrc.parentElement !== item.parentElement) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      document.querySelectorAll('.check-item.drag-over').forEach(el => el.classList.remove('drag-over'));
+      item.classList.add('drag-over');
+    });
+    item.addEventListener('drop', e => {
+      if (!dragSrc || dragSrc === item) return;
+      if (dragSrc.parentElement !== item.parentElement) return;
+      e.preventDefault();
+      item.classList.remove('drag-over');
+      const parent = item.parentElement;
+      const items = [...parent.querySelectorAll('.check-item')];
+      const srcIdx = items.indexOf(dragSrc);
+      const tgtIdx = items.indexOf(item);
+      if (srcIdx < tgtIdx) parent.insertBefore(dragSrc, item.nextSibling);
+      else parent.insertBefore(dragSrc, item);
+    });
+  }
+
+  // Init drag on all existing today/tmrw/weekly tasks
+  function initAllDrag() {
+    document.querySelectorAll('#today-tasks .check-item, #tmrw-tasks .check-item, #weekly-tasks .check-item')
+      .forEach(initDragItem);
+  }
+
+  // ─── KEYBOARD SHORTCUT MODAL ─────────────────
+  function showKbdModal() {
+    if (document.getElementById('kbd-modal-overlay')) return;
+    const overlay = document.createElement('div');
+    overlay.className = 'kbd-modal-overlay';
+    overlay.id = 'kbd-modal-overlay';
+    overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+    overlay.innerHTML = `
+      <div class="kbd-modal">
+        <div class="kbd-modal-title">Keyboard Shortcuts</div>
+        <div class="kbd-row"><span class="kbd-desc">Undo last action</span><span class="kbd-keys"><kbd>Ctrl</kbd><kbd>Z</kbd></span></div>
+        <div class="kbd-row"><span class="kbd-desc">Open shortcuts</span><span class="kbd-keys"><kbd>?</kbd></span></div>
+        <div class="kbd-row"><span class="kbd-desc">Close modal</span><span class="kbd-keys"><kbd>Esc</kbd></span></div>
+        <div class="kbd-row"><span class="kbd-desc">Force day rollover (testing)</span><span class="kbd-keys"><kbd>Shift</kbd><kbd>R</kbd></span></div>
+        <div class="kbd-row"><span class="kbd-desc">Drag handle to reorder tasks</span><span class="kbd-keys" style="color:var(--text-muted);font-size:11px;">drag ⠿</span></div>
+        <div class="kbd-row"><span class="kbd-desc">Move task to tomorrow</span><span class="kbd-keys" style="color:var(--text-muted);font-size:11px;">hover → click</span></div>
+        <div class="kbd-row"><span class="kbd-desc">Delete task</span><span class="kbd-keys" style="color:var(--text-muted);font-size:11px;">hover × click</span></div>
+        <div class="kbd-row"><span class="kbd-desc">Edit project due date</span><span class="kbd-keys" style="color:var(--text-muted);font-size:11px;">click date</span></div>
+        <button class="kbd-close-btn" onclick="document.getElementById('kbd-modal-overlay').remove()">Close</button>
+      </div>`;
+    document.body.appendChild(overlay);
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === '?' && !['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) showKbdModal();
+    if (e.key === 'Escape') document.getElementById('kbd-modal-overlay')?.remove();
+  });
+
+  // ─── STATS TRACKING ──────────────────────────
+  // Stores daily task completion counts: { 'YYYY-MM-DD': N }
+  function recordStatEvent(type) {
+    try {
+      const key = 'aos_stats_' + type;
+      const data = JSON.parse(localStorage.getItem(key) || '{}');
+      const today = getPSTDateString();
+      data[today] = (data[today] || 0) + 1;
+      localStorage.setItem(key, JSON.stringify(data));
+    } catch(e) {}
+  }
+
+  function getStatData(type) {
+    try { return JSON.parse(localStorage.getItem('aos_stats_' + type) || '{}'); } catch(e) { return {}; }
+  }
+
+  // ─── STATS PAGE ──────────────────────────────
+  function showStats() {
+    let page = document.getElementById('stats-page');
+    if (!page) {
+      page = document.createElement('div');
+      page.id = 'stats-page';
+      page.className = 'stats-page';
+      document.querySelector('.main').appendChild(page);
+    }
+    page.classList.add('active');
+    document.getElementById('main-content').classList.add('hidden');
+    renderStats(page);
+  }
+
+  function hideStats() {
+    document.getElementById('stats-page')?.classList.remove('active');
+    document.getElementById('main-content')?.classList.remove('hidden');
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.querySelector('.nav-item[href="#today"]')?.classList.add('active');
+  }
+
+  function renderStats(page) {
+    const taskData  = getStatData('task_complete');
+    const projData  = getStatData('project_complete');
+
+    const now = new Date();
+    const pst = new Date(now.getTime() - 8*60*60*1000);
+    const todayStr = getPSTDateString();
+
+    // Build last 7 days array
+    const days7 = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(pst); d.setUTCDate(pst.getUTCDate() - i);
+      const k = `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`;
+      days7.push({ label: ['Su','Mo','Tu','We','Th','Fr','Sa'][d.getUTCDay()], key: k, count: taskData[k] || 0 });
+    }
+    const week7Total = days7.reduce((s,d) => s+d.count, 0);
+    const todayTotal = taskData[todayStr] || 0;
+
+    // All time
+    const allTimeTotal = Object.values(taskData).reduce((s,v) => s+v, 0);
+    const projTotal    = Object.values(projData).reduce((s,v) => s+v, 0);
+
+    // This month
+    const monthKey = `${pst.getUTCFullYear()}-${pst.getUTCMonth()}`;
+    const monthTotal = Object.entries(taskData)
+      .filter(([k]) => k.startsWith(monthKey.split('-')[0]+'-'+monthKey.split('-')[1]))
+      .reduce((s,[,v]) => s+v, 0);
+
+    const maxDay = Math.max(...days7.map(d => d.count), 1);
+
+    page.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;padding-top:4px;">
+        <div>
+          <div class="section-heading" style="margin-bottom:4px;">Stats & Progress</div>
+          <div style="font-size:12px;color:var(--text-muted);">Your academic productivity at a glance</div>
+        </div>
+        <button class="add-btn" style="padding:6px 14px;border:1px solid var(--border2);border-radius:8px;" onclick="hideStats()">← Back to dashboard</button>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-card-val">${todayTotal}</div>
+          <div class="stat-card-label">Tasks completed today</div>
+          <div class="stat-card-sub">${week7Total} this week · ${monthTotal} this month</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-val">${allTimeTotal}</div>
+          <div class="stat-card-label">All-time tasks completed</div>
+          <div class="stat-card-sub">Since you started tracking</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-val">${projTotal}</div>
+          <div class="stat-card-label">Projects completed</div>
+          <div class="stat-card-sub">${document.querySelectorAll('#projects-list .project-block').length} currently active</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header"><div class="card-title"><span class="card-title-icon">◈</span> Tasks per day — last 7 days</div></div>
+        <div class="card-body" style="padding:20px 24px;">
+          <div class="stats-bar-chart">
+            ${days7.map(d => `
+              <div class="stats-bar-row">
+                <div class="stats-bar-label">${d.label}</div>
+                <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${Math.round((d.count/maxDay)*100)}%"></div></div>
+                <div class="stats-bar-count">${d.count}</div>
+              </div>`).join('')}
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header"><div class="card-title"><span class="card-title-icon">⬡</span> Research projects over time</div></div>
+        <div class="card-body" style="padding:20px 24px;">
+          ${projTotal === 0
+            ? `<div style="color:var(--text-dim);font-size:13px;">No projects completed yet — complete one to start tracking.</div>`
+            : `<div style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">${projTotal} project${projTotal!==1?'s':''} completed all time</div>
+               <div class="stats-bar-chart">
+                 ${Object.entries(
+                     Object.entries(projData).reduce((acc,[k,v]) => {
+                       const parts = k.split('-'); const label = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(parts[1])]+' '+parts[0];
+                       acc[label] = (acc[label]||0)+v; return acc;
+                     }, {})
+                   ).slice(-6).map(([label,count]) => `
+                   <div class="stats-bar-row">
+                     <div class="stats-bar-label" style="width:52px;font-size:10px;">${label}</div>
+                     <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${Math.round((count/Math.max(...Object.values(projData),1))*100)}%;background:var(--green)"></div></div>
+                     <div class="stats-bar-count">${count}</div>
+                   </div>`).join('')}
+               </div>`}
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header"><div class="card-title"><span class="card-title-icon">↺</span> Current snapshot</div></div>
+        <div class="card-body" style="padding:20px 24px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div><div style="font-size:11px;color:var(--text-dim);font-family:'Geist Mono',monospace;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">Active tasks today</div><div style="font-size:24px;font-weight:600;color:var(--text)">${document.querySelectorAll('#today-tasks .check-item').length}</div></div>
+          <div><div style="font-size:11px;color:var(--text-dim);font-family:'Geist Mono',monospace;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">Tomorrow planned</div><div style="font-size:24px;font-weight:600;color:var(--text)">${document.querySelectorAll('#tmrw-tasks .check-item').length}</div></div>
+          <div><div style="font-size:11px;color:var(--text-dim);font-family:'Geist Mono',monospace;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">Lectures pending</div><div style="font-size:24px;font-weight:600;color:var(--text)">${document.querySelectorAll('#lecture-list .dual-row:not(.fully-done)').length}</div></div>
+          <div><div style="font-size:11px;color:var(--text-dim);font-family:'Geist Mono',monospace;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">Review queue</div><div style="font-size:24px;font-weight:600;color:var(--text)">${document.querySelectorAll('#review-list .review-item').length}</div></div>
+        </div>
+      </div>`;
+  }
+
+  function resetCredentials() {
+    if (!confirm('This will clear your saved Gist credentials and show the setup screen. Your data in the Gist is safe. Continue?')) return;
+    localStorage.removeItem('aos_gist_id');
+    localStorage.removeItem('aos_gist_token');
+    GIST_ID = ''; GIST_TOKEN = '';
+    showSetupScreen();
+  }
+
+  // ─── EXPORT / IMPORT ─────────────────────────
+  function exportData() {
+    try {
+      const backup = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.startsWith('aos_')) backup[key] = localStorage.getItem(key);
+      }
+      const json = JSON.stringify(backup, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const now = new Date();
+      const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+      a.href = url; a.download = `academic-os-backup-${dateStr}.json`;
+      a.click(); URL.revokeObjectURL(url);
+      showToast('✓ Backup downloaded');
+    } catch(e) { showToast('Export failed'); }
+  }
+
+  function importData() {
+    document.getElementById('import-file-input').click();
+  }
+
+  function handleImportFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const data = JSON.parse(e.target.result);
+        const keys = Object.keys(data).filter(k => k.startsWith('aos_'));
+        if (keys.length === 0) { showToast('No valid data found in file'); return; }
+        if (!confirm(`This will restore ${keys.length} data keys and reload the page. Your current data will be replaced. Continue?`)) return;
+        keys.forEach(k => localStorage.setItem(k, data[k]));
+        showToast('✓ Data restored — syncing & reloading...');
+        await pushToGist();
+        setTimeout(() => location.reload(), 1200);
+      } catch(err) { showToast('Import failed — invalid file'); }
+    };
+    reader.readAsText(file);
+    input.value = '';
+  }
+
+  // ─── GCAL MOCK CONNECT ───────────────────────
+  function connectGCal() {
+    const badge = document.querySelector('.gcal-badge');
+    badge.innerHTML = `<div class="gcal-dot"></div><div class="gcal-text"><strong>Google Calendar</strong><span style="color:var(--green)">Connected ✓</span></div>`;
+
+    const eventsEl = document.getElementById('gcal-events');
+    const mockEvents = [
+      { time: '8:00 AM', name: 'Anatomy Lab', tag: 'Class', color: 'var(--accent)' },
+      { time: '11:00 AM', name: 'Research Advisor Meeting', tag: 'Research', color: 'var(--amber)' },
+      { time: '2:00 PM', name: 'Study Group — Cardio', tag: 'Study', color: 'var(--green)' },
+      { time: '5:30 PM', name: 'Journal Club', tag: 'Academic', color: 'var(--blue)' },
+    ];
+
+    eventsEl.innerHTML = mockEvents.map(e => `
+      <div class="event-row">
+        <span class="event-time">${e.time}</span>
+        <span class="event-dot" style="background:${e.color}"></span>
+        <span class="event-name">${e.name}</span>
+        <span class="event-tag" style="background:${e.color}18;color:${e.color};border:1px solid ${e.color}33">${e.tag}</span>
+      </div>
+    `).join('');
+  }
+</script>
+</body>
+</html>
